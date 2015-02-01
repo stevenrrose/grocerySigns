@@ -1,15 +1,16 @@
 var DEBUG=false;
 
 /**
- * Normalize string:
- *
- * - trim outer spaces
- * - collate inner spaces
- * - convert to uppercase
- *
- *  @param s    String to normalize
- */
+ *  Normalize string:
+ *  
+ *  - trim outer spaces
+ *  - collate inner spaces
+ *  - convert to uppercase
+ *  
+ *  @param s 	String to normalize
+ */ 
 function normalizeString(s) {
+	if (typeof(s) === 'undefined') return "";
     return s
         .trim()
         .replace(/\s+/g, " ")
@@ -18,9 +19,9 @@ function normalizeString(s) {
 }
 
 /**
- * Refresh the PDF output frames.
- *
- * Typically called from input change event handlers.
+ *  Refresh the PDF output frames.
+ *  
+ *  Typically called from input change event handlers.
  */
 function refresh() {
     // Output iframe.
@@ -58,21 +59,24 @@ function refresh() {
 			if (doneFields[id]) return;
 			
 			// Get or retrieve box coordinates.
-			var left   = (typeof(field.left)   == "number") ? field.left   : fieldCoords[field.left],
-				right  = (typeof(field.right)  == "number") ? field.right  : fieldCoords[field.right],
-				top    = (typeof(field.top)    == "number") ? field.top    : fieldCoords[field.top],
-				bottom = (typeof(field.bottom) == "number") ? field.bottom : fieldCoords[field.bottom];
+			var left   = (typeof(field.left)   == 'number') ? field.left   : fieldCoords[field.left],
+				right  = (typeof(field.right)  == 'number') ? field.right  : fieldCoords[field.right],
+				top    = (typeof(field.top)    == 'number') ? field.top    : fieldCoords[field.top],
+				bottom = (typeof(field.bottom) == 'number') ? field.bottom : fieldCoords[field.bottom];
 				
-			// Remember coordinates that we know.
-			if (typeof(left)   == "number") fieldCoords[id + ".left"] = left;
-			if (typeof(right)  == "number") fieldCoords[id + ".right"] = right;
-			if (typeof(top)    == "number") fieldCoords[id + ".top"] = top;
-			if (typeof(bottom) == "number") fieldCoords[id + ".bottom"] = bottom;
+			// Remember coordinates that we know at this stage.
+			if (typeof(left)   == 'number') fieldCoords[id + ".left"]   = left;
+			if (typeof(right)  == 'number') fieldCoords[id + ".right"]  = right;
+			if (typeof(top)    == 'number') fieldCoords[id + ".top"]    = top;
+			if (typeof(bottom) == 'number') fieldCoords[id + ".bottom"] = bottom;
 			
-			if (   typeof(left)   != "number"
-				|| typeof(right)  != "number"
-				|| typeof(top)    != "number"
-				|| typeof(bottom) != "number") {
+			if (typeof(left) == 'number' && typeof(right)  == 'number') fieldCoords[id + ".width"]  = right  - left;
+			if (typeof(top)  == 'number' && typeof(bottom) == 'number') fieldCoords[id + ".height"] = bottom - top;
+			
+			if (   typeof(left)   != 'number'
+				|| typeof(right)  != 'number'
+				|| typeof(top)    != 'number'
+				|| typeof(bottom) != 'number') {
 				// We're still missing some info, try next loop iteration.
 				return;
 			}
@@ -199,16 +203,16 @@ function refresh() {
 
 /**
  * Word fitting algorithm.
- *
+ *  
  *  Try to form lines of harmonious proportions. To do so, try all possible
  *  combinations of words and keep the narrowest one. This is a very naive
  *  recursive algorithm but it works fine for our purpose (the number of words 
  *  and lines is low).
- *
- *  @param doc      The PDFDocument.
- *  @param word     Array of words to fill lines with.
- *  @param nbLines  Number of lines to fill.
- */
+ *  
+ *  @param doc     	The PDFDocument.
+ *  @param words   	Array of words to fill lines with.
+ *  @param nbLines 	Number of lines to fill.
+ */ 
 function fitWords(doc, words, nbLines) {
     // Stop conditions.
     if (nbLines == 1) {
@@ -256,7 +260,7 @@ function fitWords(doc, words, nbLines) {
  *  Calls *fitWords* with increasing *nbLines* values until an acceptable 
  *  scaling ratio is found.
  *
- *  @param doc      The PDFDocument.
+ *  @param doc     	The PDFDocument.
  *  @param words    Array of words to form lines with.
  *  @param nbLines  Minimum number of lines to form.
  *  @param options  Options:
