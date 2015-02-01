@@ -32,106 +32,163 @@ function refresh() {
     // Create PDF document with template size.
     var doc = new PDFDocument({size: [template.width, template.height]});
     var stream = doc.pipe(blobStream());
-    
-    // Iterate over fields.
-    $.each(template.fields, function(id, field) {
-        doc.save();
-        
-        // Box origin.
-        doc.translate(field.x, field.y);
-        
-        if (DEBUG) {
-            doc.rect(0, 0, field.width, field.height).stroke();
-            if (field.tallWidth) doc.rect(0, 0, field.tallWidth, field.tallHeight).stroke();
-        }
 
-        if (field.inverted) {
-            // White on black.
-            doc.rect(0, 0, field.width, field.height).fill('black');
-            doc.fill('white');
-        }
- 
-        // Get & normalize field value.
-        var text = normalizeString($("#"+id).val());
-        if (text.length > 0) {
-            // Text origin.
-            var padX = (field.padX || template.padX || 0),
-                padY = (field.padY || template.padY || 0);
-            doc.translate(padX, padY);
+	//
+    // Iterate over fields until none is left or displayable. As some fields use relative placement,
+	// they must be displayed after the fields they depend on. So we make several passes until we
+	// get enough info to display such fields properly.
+	//
+	
+	// Remember fields done so far.
+	var doneFields = [];
+	
+	// Array of field coordinates. This is simply a string map whose key is a simple specifier such as "FIELDNAME.left".
+	// Field types may define extra dimension specifiers (e.g. "price" fields define "FIELDNAME.separator for x position 
+	// of price separator). There are also template-wide coordinates for page dimensions.
+	var fieldCoords = {
+		"width"  : template.width,
+		"height" : template.height
+	};
+	
+	while (Object.keys(doneFields).length < Object.keys(template.fields).length)
+	{
+		var progress = false;
+		
+		$.each(template.fields, function(id, field) {
+			if (doneFields[id]) return;
+			
+			// Get or retrieve box coordinates.
+			var left   = (typeof(field.left)   == "number") ? field.left   : fieldCoords[field.left],
+				right  = (typeof(field.right)  == "number") ? field.right  : fieldCoords[field.right],
+				top    = (typeof(field.top)    == "number") ? field.top    : fieldCoords[field.top],
+				bottom = (typeof(field.bottom) == "number") ? field.bottom : fieldCoords[field.bottom];
+				
+			// Remember coordinates that we know.
+			if (typeof(left)   == "number") fieldCoords[id + ".left"] = left;
+			if (typeof(right)  == "number") fieldCoords[id + ".right"] = right;
+			if (typeof(top)    == "number") fieldCoords[id + ".top"] = top;
+			if (typeof(bottom) == "number") fieldCoords[id + ".bottom"] = bottom;
+			
+			if (   typeof(left)   != "number"
+				|| typeof(right)  != "number"
+				|| typeof(top)    != "number"
+				|| typeof(bottom) != "number") {
+				// We're still missing some info, try next loop iteration.
+				return;
+			}
 
-            doc.font(field.font || template.font);
-            var type = (field.type || 'text');
-            switch (type) {
-                case 'text': {
-                    // Regular text field: use harmonious word wrapping.
-                    var options = {
-                        width:    field.width - padX*2,
-                        height:   field.height - padY*2,
-                        maxRatio: (field.maxRatio || template.maxRatio || 2)
-                    };
-                    var fit = wrapText(doc, text.split(" "), 1, options);
-                    
-                    // Output wrapped text line by line.
-                    var scaleX = options.width  / fit.width,
-                        scaleY = options.height / (doc.currentLineHeight() * fit.lines.length);
-                    doc.scale(scaleX, scaleY, {/*empty block needed*/});
-                    var y = 0;
-                    for (var i = 0; i < fit.lines.length; i++) {
-                        // Centered on line
-                        var width = doc.widthOfString(fit.lines[i]);
-                        doc.text(fit.lines[i], (fit.width-width)/2, y);
-                        y += doc.currentLineHeight();
-                    }
-                    break;
-                }
-                case 'price': {
-                    // Price field have 3 parts:
-                    // - Currency sign
-                    // - Main part (taller)
-                    // - Decimal part
-                    // All 3 parts use the same X scaling (i.e. the char widths
-                    // are the same), but the main part is taller and so uses
-                    // a greater Y factor.
-                    var currency = (field.currency || "$");
-                    var separator = (field.separator || ".");
-                    var parts = text.split(separator);
-                    var main = parts[0];
-                    var decimal = parts[1] || "";
-                    
-                    // Compute X scaling of currency+main & decimal parts and
-                    // choose the smallest value for both.
-                    var scaleXMain = (field.mainWidth - padX) / doc.widthOfString(currency+main),
-                        scaleXDecimal = (decimal.length == 0 ? +Infinity : (field.width - field.mainWidth - padX) / doc.widthOfString(decimal));
-                    var scaleX = Math.min(scaleXMain, scaleXDecimal);
-                    
-                    // Compute Y scaling of currency+decimal and main parts.
-                    var scaleY     = (field.height     - padY*2) / doc.currentLineHeight(),
-                        scaleYMain = (field.mainHeight - padY*2) / doc.currentLineHeight();
-                        
-                    // Output parts.
-                    var x = 0;
-                    // - Currency.
-                    doc.save();
-                    doc.scale(scaleX, scaleY, {/*empty block needed*/});
-                    doc.text(currency, x, 0);
-                    doc.restore();
-                    x += doc.widthOfString(currency);
-                    // - Main.
-                    doc.save();
-                    var mainShift = (field.mainShift || 0);
-                    doc.translate(0, mainShift);
-                    doc.scale(scaleX, scaleYMain, {/*empty block needed*/});
-                    doc.text(main, x, 0);
-                    doc.restore();
-                    x += doc.widthOfString(main);
-                    // - Decimal.
-                    doc.scale(scaleX, scaleY, {/*empty block needed*/});
-                    doc.text(decimal, x, 0);
-                }
-            }
-        }
-        doc.restore();
-    });
+			// Compute box dimensions.
+			var width  = right  - left,
+				height = bottom - top;
+			
+				
+			doc.save();
+			
+			// Box origin.
+			doc.translate(left, top);
+			
+			if (DEBUG) {
+				doc.rect(0, 0, width, height).stroke();
+				if (field.mainHeight) doc.rect(0, 0, width, field.mainHeight).stroke();
+			}
+
+			if (field.inverted) {
+				// White on black.
+				doc.rect(0, 0, width, height).fill('black');
+				doc.fill('white');
+			}
+	 
+			// Get & normalize field value.
+			var text = normalizeString($("#"+id).val());
+			if (text.length > 0) {
+				// Text origin.
+				var padX = (field.padX || template.padX || 0),
+					padY = (field.padY || template.padY || 0);
+				doc.translate(padX, padY);
+
+				doc.font(field.font || template.font);
+				var type = (field.type || 'text');
+				switch (type) {
+					case 'text': {
+						// Regular text field: use harmonious word wrapping.
+						var options = {
+							width:    width  - padX*2,
+							height:   height - padY*2,
+							maxRatio: (field.maxRatio || template.maxRatio || 2)
+						};
+						var fit = wrapText(doc, text.split(" "), 1, options);
+						
+						// Output wrapped text line by line.
+						var scaleX = options.width  / fit.width,
+							scaleY = options.height / (doc.currentLineHeight() * fit.lines.length);
+						doc.scale(scaleX, scaleY, {/*empty block needed*/});
+						var y = 0;
+						for (var i = 0; i < fit.lines.length; i++) {
+							// Centered on line
+							var lineWidth = doc.widthOfString(fit.lines[i]);
+							doc.text(fit.lines[i], (fit.width-lineWidth)/2, y);
+							y += doc.currentLineHeight();
+						}
+						break;
+					}
+					case 'price': {
+						// Price field have 3 parts:
+						// - Currency sign
+						// - Main part (taller)
+						// - Decimal part
+						// All 3 parts use the same X scaling (i.e. the char widths
+						// are the same), but the main part is taller and so uses
+						// a greater Y factor.
+						var currency = (field.currency || "$");
+						var separator = (field.separator || ".");
+						var parts = text.split(separator);
+						var main = parts[0];
+						var decimal = parts[1] || "  ";
+						
+						// Compute X scaling of currency+main+decimal parts.
+						var scaleX = (width - padX) / doc.widthOfString(currency+main+decimal);
+						
+						// Compute Y scaling of currency+decimal and main parts.
+						var scaleY     = (height     - padY*2) / doc.currentLineHeight(),
+							scaleYMain = (field.mainHeight - padY*2) / doc.currentLineHeight();
+							
+						// Output parts.
+						var x = 0;
+						// - Currency.
+						doc.save();
+						doc.scale(scaleX, scaleY, {/*empty block needed*/});
+						doc.text(currency, x, 0);
+						doc.restore();
+						x += doc.widthOfString(currency);
+						fieldCoords[id + ".currency"] = left + x*scaleX;
+						// - Main.
+						doc.save();
+						var mainShift = (field.mainShift || 0);
+						doc.translate(0, mainShift);
+						doc.scale(scaleX, scaleYMain, {/*empty block needed*/});
+						doc.text(main, x, 0);
+						doc.restore();
+						x += doc.widthOfString(main);
+						fieldCoords[id + ".separator"] = left + x*scaleX;
+						// - Decimal.
+						doc.scale(scaleX, scaleY, {/*empty block needed*/});
+						doc.text(decimal, x, 0);
+					}
+				}
+			}
+			doc.restore();
+			
+			// Done!
+			doneFields[id] = true;
+			progress = true;
+		});
+		
+		// Check progress.
+		if (!progress) {
+			// No progress, stop there.
+			break;
+		}
+	}
 
     // Output the PDF blob into given iframe.
     doc.end();
