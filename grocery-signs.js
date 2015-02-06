@@ -7,7 +7,7 @@ var DEBUG=false;
  *  - collate inner spaces
  *  - convert to uppercase
  *  
- *  @param s 	String to normalize
+ *  @param s 	String to normalize.
  */ 
 function normalizeString(s) {
 	if (typeof(s) === 'undefined') return "";
@@ -22,14 +22,11 @@ function normalizeString(s) {
  *  Refresh the PDF output frames.
  *  
  *  Typically called from input change event handlers.
+ *  
+ *  @param output 		Output iframe.
+ *  @param template		Template descriptor.
  */
-function refresh() {
-    // Output iframe.
-    var output = $("#output")[0];
-    
-    // Selected template.
-    var template = templates[$("#template").val()];
-    
+function refreshFrame(output, template) {
     // Create PDF document with template size.
     var doc = new PDFDocument({size: [template.width, template.height]});
     var stream = doc.pipe(blobStream());
@@ -264,8 +261,8 @@ function fitWords(doc, words, nbLines) {
  *  @param words    Array of words to form lines with.
  *  @param nbLines  Minimum number of lines to form.
  *  @param options  Options:
- *                  - width     Width of target box
- *                  - height    Height of target box
+ *                  - width     Width of target box.
+ *                  - height    Height of target box.
  *                  - maxRatio  Maximum y/x scaling ratio. Beyond this value the
  *                              characters are too narrow.
  */
@@ -281,4 +278,111 @@ function wrapText(doc, words, nbLines, options) {
         // Add a line.
         return wrapText(doc, words, nbLines+1, options);
     }
+}
+
+/** Remember selected templates for each page so that we can change the layout
+ *  while preserving the template order. By default pages display all available
+ *  templates in order. */
+var selectedTemplates = Object.keys(templates);
+
+/**
+ *  Build the output page elements.
+ */
+function buildPages() {
+	// No need to display more pages than available templates.
+	var nbPages = Object.keys(templates).length;
+	
+    // Adjust column layout.
+    var columns = parseInt($("#columns").val());
+	var colClass;
+    switch (columns) {
+        case 0:
+            // Automatic, use 3-column responsive layout.
+            columns = 4;
+            colClass = "col-xs-12";
+            if (nbPages >= 2) {
+                colClass += " col-sm-6";
+            }
+            if (nbPages >= 3) {
+                colClass += " col-md-4";
+            }
+            if (nbPages >= 4) {
+                colClass += " col-lg-3";
+            }
+            break;
+            
+        case 1:
+            colClass = "col-xs-12";
+            break;
+            
+        case 2:
+            colClass = "col-xs-12 col-sm-6";
+            break;
+            
+        case 3:
+            colClass = "col-xs-12 col-sm-4";
+            break;
+            
+        case 4:
+            colClass = "col-xs-12 col-sm-3";
+            break;
+            
+        case 6:
+            colClass = "col-xs-12 col-sm-2";
+            break;
+    }
+
+	// Don't display more pages than needed.
+    var rows = parseInt($("#rows").val());
+	nbPages = Math.min(nbPages, columns * rows);
+	
+    // Clear existing pages.
+    var $pages = $("#pages");
+    $pages.empty();
+    
+	// Create page elements.
+	for (var i=0; i < nbPages; i++) {
+		var page = "<div class='" + colClass + "'>";
+		page += "<div class='thumbnail'>";
+		page += "<select id='page-template-" + i + "' class='page-template form-control'></select>";
+		page += "<div class='page page-iso'><iframe id='page-" + i + "' frameborder='0'></iframe></div>";
+		page += "</div>";
+		page += "</div>";
+		$pages.append(page);
+	}
+	
+	// Populate template selects from *templates* keys (see templates.js), and bind change event.
+	$(".page-template").each(function(i, e) {
+		// Add each template name to select.
+		$.each(templates, function(key) {
+			$(e).append(new Option(key));
+		});
+		
+		// Select active template.
+		$(e).val(selectedTemplates[i]);
+		
+		// Refresh page on change.
+		$(e).change(function() {
+			// Remember newly selected template.
+			var templateName = $(e).val();
+			selectedTemplates[i] = templateName;
+			
+			// Refresh page.
+			var output = $("#page-" + i)[0];
+			refreshFrame(output, templates[templateName]);
+		});
+	});
+
+	refresh();
+}
+
+/**
+ *  Refresh all active pages.
+ */
+function refresh() {
+	// Call refreshFrame on each active page.
+	$(".page iframe").each(function(i, e) {
+		var templateName = $("#page-template-" + i).val();
+		refreshFrame(e, templates[templateName]);
+	});
 }

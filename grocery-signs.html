@@ -35,8 +35,8 @@
     <script src="fonts/SansPosterBold.js"></script>
 
     <!-- Our stuff -->
-    <script src="grocery-signs.js"></script>
     <script src="templates.js"></script>
+    <script src="grocery-signs.js"></script>
     
     <link rel="stylesheet" href="grocery-signs.css">
 </head>
@@ -47,23 +47,39 @@
         </div>
         
         <!-- Parameters -->
-        <div class="panel panel-default col-sm-4">
+        <div class="panel panel-default">
             <div class="panel-body">
                 <form class="form-horizontal" role="form">
-                    <!-- Template layout -->
+                    <!-- Layout -->
                     <div class="form-group">
-                        <label for="template" class="col-sm-3 control-label">Template</label>
+                        <label for="columns" class="col-sm-3 control-label">Display</label>
                         <div class="col-sm-9">
-                            <select id="template" class="form-control"></select>
+							<div class="form-inline">
+								<select id="columns" class="form-control">
+									<option value="0" selected>Auto</option>
+									<option value="1">1</option>
+									<option value="2">2</option>
+									<option value="3">3</option>
+									<option value="4">4</option>
+									<option value="6">6</option>
+								</select>
+								&times;
+								<select id="rows" class="form-control">
+									<option value="1">1</option>
+									<option value="2">2</option>
+									<option value="3" selected>3</option>
+									<option value="4">4</option>
+									<option value="5">5</option>
+								</select>
+							</div>
+                        <p class="help-block">Max columns/rows per page</p>
                         </div>
+						<script>
+						$("#columns").change(buildPages);
+						$("#rows").change(buildPages);
+						</script>
                     </div>
-                    <script>
-                    // Populate from *templates* keys (see templates.js)
-                    $.each(templates, function(key) {
-                        $("#template").append(new Option(key));
-                    });
-                    </script>
-                    
+					
                     <!-- Template fields -->
                     <div class="form-group">
                         <label for="FIELD01" class="col-sm-3 control-label">FIELD01</label>
@@ -113,17 +129,20 @@
                             <input class="FIELD form-control" id="FIELD08" />
                         </div>
                     </div>
+					<script>
+					$(".FIELD").change(refresh).keyup(refresh);
+					</script>
                 </form>
             </div>
         </div>
-        <div class="col-sm-8">
-            <iframe id="output" width="550" height="700" frameborder="0"></iframe>
-        </div>
     </div>
-    <script>
-    $(".FIELD").change(refresh).keyup(refresh);
-    $("#template").change(refresh);
-    refresh();
-    </script>
+	
+    <!-- Container for pages -->
+	<div id="pages" class="container-fluid"></div>
+	
+	<script>
+	// Refresh interface.
+	buildPages();
+	</script>
 </body>
 </html>
