@@ -1,5 +1,11 @@
 var DEBUG=false;
 
+/*
+ *
+ * Algorithms and functions.
+ *
+ */
+
 /**
  *  Normalize string:
  *  
@@ -17,6 +23,95 @@ function normalizeString(s) {
         .toUpperCase()
     ;
 }
+
+/**
+ * Word fitting algorithm.
+ *  
+ *  Try to form lines of harmonious proportions. To do so, try all possible
+ *  combinations of words and keep the narrowest one. This is a very naive
+ *  recursive algorithm but it works fine for our purpose (the number of words 
+ *  and lines is low).
+ *  
+ *  @param doc     	The PDFDocument.
+ *  @param words   	Array of words to fill lines with.
+ *  @param nbLines 	Number of lines to fill.
+ */ 
+function fitWords(doc, words, nbLines) {
+    // Stop conditions.
+    if (nbLines == 1) {
+        // Single line.
+        var line = words.join(" ");
+        return {
+            lines: [line], 
+            width: doc.widthOfString(line)
+        };
+    } else if (words.length < nbLines) {
+        // Less words than lines.
+        return {
+            lines: [],
+            width: +Infinity
+        }
+    }
+    
+    // Word fitting algorithm: form the first line then recurse on remaining
+    // lines & words.
+    var fit = {
+        lines: [],
+        width: +Infinity
+    };
+    for (var i = 0; i < words.length; i++) {
+        // First line.
+        var line0 = words.slice(0, i+1).join(" ");
+        var width0 = doc.widthOfString(line0);
+        if (width0 >= fit.width) continue; // No need to continue.
+        
+        // Recurse on remaining lines.
+        var remainder = fitWords(doc, words.slice(i+1), nbLines-1);
+        if (remainder.width >= fit.width) continue; // No need to continue.
+        
+        // This one is better.
+        var width = Math.max(width0, remainder.width);
+        fit.lines = [line0].concat(remainder.lines);
+        fit.width = width;
+    }
+    return fit;
+}
+
+/**
+ * Word wrap algorithm.
+ *
+ *  Calls *fitWords* with increasing *nbLines* values until an acceptable 
+ *  scaling ratio is found.
+ *
+ *  @param doc     	The PDFDocument.
+ *  @param words    Array of words to form lines with.
+ *  @param nbLines  Minimum number of lines to form.
+ *  @param options  Options:
+ *                  - width     Width of target box.
+ *                  - height    Height of target box.
+ *                  - maxRatio  Maximum y/x scaling ratio. Beyond this value the
+ *                              characters are too narrow.
+ */
+function wrapText(doc, words, nbLines, options) {
+    // Find best fit for given number of lines.
+    var fit = fitWords(doc, words, nbLines);
+    var scaleX = options.width  / fit.width,
+        scaleY = options.height / (doc.currentLineHeight() * nbLines);
+    if (scaleY <= options.maxRatio*scaleX || words.length == nbLines) {
+        // Ratio is acceptable or we can't add lines anymore.
+        return fit;
+    } else {
+        // Add a line.
+        return wrapText(doc, words, nbLines+1, options);
+    }
+}
+
+
+/*
+ *
+ * PDF Generation.
+ *
+ */
 
 /**
  *  Refresh the PDF output frames.
@@ -198,92 +293,23 @@ function refreshFrame(output, template) {
     });
 }
 
-/**
- * Word fitting algorithm.
- *  
- *  Try to form lines of harmonious proportions. To do so, try all possible
- *  combinations of words and keep the narrowest one. This is a very naive
- *  recursive algorithm but it works fine for our purpose (the number of words 
- *  and lines is low).
- *  
- *  @param doc     	The PDFDocument.
- *  @param words   	Array of words to fill lines with.
- *  @param nbLines 	Number of lines to fill.
- */ 
-function fitWords(doc, words, nbLines) {
-    // Stop conditions.
-    if (nbLines == 1) {
-        // Single line.
-        var line = words.join(" ");
-        return {
-            lines: [line], 
-            width: doc.widthOfString(line)
-        };
-    } else if (words.length < nbLines) {
-        // Less words than lines.
-        return {
-            lines: [],
-            width: +Infinity
-        }
-    }
-    
-    // Word fitting algorithm: form the first line then recurse on remaining
-    // lines & words.
-    var fit = {
-        lines: [],
-        width: +Infinity
-    };
-    for (var i = 0; i < words.length; i++) {
-        // First line.
-        var line0 = words.slice(0, i+1).join(" ");
-        var width0 = doc.widthOfString(line0);
-        if (width0 >= fit.width) continue; // No need to continue.
-        
-        // Recurse on remaining lines.
-        var remainder = fitWords(doc, words.slice(i+1), nbLines-1);
-        if (remainder.width >= fit.width) continue; // No need to continue.
-        
-        // This one is better.
-        var width = Math.max(width0, remainder.width);
-        fit.lines = [line0].concat(remainder.lines);
-        fit.width = width;
-    }
-    return fit;
-}
 
-/**
- * Word wrap algorithm.
+/*
  *
- *  Calls *fitWords* with increasing *nbLines* values until an acceptable 
- *  scaling ratio is found.
+ * Interface functions.
  *
- *  @param doc     	The PDFDocument.
- *  @param words    Array of words to form lines with.
- *  @param nbLines  Minimum number of lines to form.
- *  @param options  Options:
- *                  - width     Width of target box.
- *                  - height    Height of target box.
- *                  - maxRatio  Maximum y/x scaling ratio. Beyond this value the
- *                              characters are too narrow.
  */
-function wrapText(doc, words, nbLines, options) {
-    // Find best fit for given number of lines.
-    var fit = fitWords(doc, words, nbLines);
-    var scaleX = options.width  / fit.width,
-        scaleY = options.height / (doc.currentLineHeight() * nbLines);
-    if (scaleY <= options.maxRatio*scaleX || words.length == nbLines) {
-        // Ratio is acceptable or we can't add lines anymore.
-        return fit;
-    } else {
-        // Add a line.
-        return wrapText(doc, words, nbLines+1, options);
-    }
-}
 
 /** Remember selected templates for each page so that we can change the layout
  *  while preserving the template order. By default pages display all available
  *  templates in order. */
 var selectedTemplates = Object.keys(templates);
+
+/** Delay for scheduled refresh events. */
+var refreshDelay = 500; /*ms*/
+
+/** Last scheduled refresh event. */
+var refreshEvent = null;
 
 /**
  *  Build the output page elements.
@@ -385,4 +411,17 @@ function refresh() {
 		var templateName = $("#page-template-" + i).val();
 		refreshFrame(e, templates[templateName]);
 	});
+}
+
+/**
+ *  Schedule a refresh event.
+ *  
+ *  This allows for interactive usage without having to recompute the whole UI at 
+ *  each keypress.
+ */
+function scheduleRefresh() {
+	if (refreshEvent) {
+		clearTimeout(refreshEvent);
+	}
+	refreshEvent = setTimeout(function() {console.log("refresh", refreshEvent); refresh(); refreshEvent = null;}, refreshDelay);
 }
