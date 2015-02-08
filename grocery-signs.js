@@ -2,6 +2,16 @@ var DEBUG=false;
 
 /*
  *
+ * Scraping.
+ *
+ */
+ 
+/** Override default fetch URL. */
+fetchUrl = "scraper/fetch.php";
+
+
+/*
+ *
  * Algorithms and functions.
  *
  */
@@ -424,4 +434,112 @@ function scheduleRefresh() {
 		clearTimeout(refreshEvent);
 	}
 	refreshEvent = setTimeout(function() {console.log("refresh", refreshEvent); refresh(); refreshEvent = null;}, refreshDelay);
+}
+
+/**
+ * Update progress information during scraping.
+ *
+ *	@param step			Step (starts at 1).
+ *	@param nbSteps		Total number of steps.
+ *	@param stepLabel	Human-readable step label to display.
+ */
+function progress(step, nbSteps, stepLabel) {
+    var percent = (step/(nbSteps+1))*100;
+    $("#progress .progress-bar").attr('aria-valuenow', step).attr('aria-valuemax', nbSteps+1).attr('style','width:'+percent.toFixed(2)+'%').find("span").html(step + "/" + nbSteps);
+    $("#progressStep").html(stepLabel);
+}
+
+/**
+ * Enable/disable interface.
+ *
+ *	@param enabled	Whether to enable or disable interface.
+ */
+function enableInterface(enabled) {
+	$("#progressDialog").modal(enabled?'hide':'show');
+}
+
+function scrapeMessage(message) {
+	if (message) {
+        $("#scrapeMessage").text(message).closest(".form-group").addClass("has-error bg-danger");
+    } else {
+        $("#scrapeMessage").empty().closest(".form-group").removeClass("has-error bg-danger");
+	}
+}
+
+/**
+ * Generate a random string.
+ *
+ *	@param size		Size of string to generate.
+ */
+function randomStr(size) {
+	var chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+	var str = "";
+	for (var i=0; i < size; i++) {
+		str += chars[Math.floor(Math.random()*chars.length)];
+	}
+	return str;
+}
+
+/**
+ * Amazon product callback: display result in table.
+ *
+ *	@param asin		ASIN of the scraped product.
+ *	@param info		Product info or undefined if failure
+ *
+ *	@see fetch()
+ */
+function fetchCallback(asin, info) {
+	if (info) {
+		// Success, display product data.
+		console.log("success", asin, info);
+		scrapeMessage();
+		
+		$("#FIELD01").val(info.title);
+		$("#FIELD02").val(info.vendor);
+		$("#FIELD03").val(info.price);
+		$("#FIELD08").val(asin);
+		refresh();
+	} else {
+		// Failure.
+		console.log("failure", asin);
+		scrapeMessage("Scraping failed! ASIN = " + asin);
+	}
+
+	// Done!
+	enableInterface(true);
+}
+
+/**
+ * Search for random Amazon products and display results in table.
+ */
+function scrapeRandom() {
+	// Disable interface elements.
+	enableInterface(false);
+	
+	// Generate random search string.
+	var str = randomStr(4);
+	progress(1, 2, "Searching for products matching '" + str + "'...")
+	search(str, function(results) {
+		if (!results || !results.length) {
+			// No or invalid results.
+			console.log("failure", "Empty results");
+			scrapeMessage("Scraping failed! Search string = " + str);
+			
+			// Stop there.
+			enableInterface(true);
+			return;
+		}
+		
+		// Pick & fetch a random product in the first result page.
+		var index = Math.floor(Math.random()*results.length);
+		var asin = results[index].asin;
+		progress(2, 2, "Fetching product " + asin + "...")
+		fetch(asin, fetchCallback);
+	});
+}
+
+
+function scrapeFields() {
+	console.log("autofill");
+	scrapeRandom();
 }
