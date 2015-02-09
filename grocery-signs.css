@@ -38,6 +38,7 @@
 	left: 0; top: 0;
 }
 
-.page-template  {
+/* Add small space between page controls and PDF output. */
+.page-container .input-group  {
 	margin-bottom:4px;
 }

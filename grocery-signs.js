@@ -378,9 +378,14 @@ function buildPages() {
     
 	// Create page elements.
 	for (var i=0; i < nbPages; i++) {
-		var page = "<div class='" + colClass + "'>";
+		var page = "<div class='page-container " + colClass + "'>";
 		page += "<div class='thumbnail'>";
+        page += "<div class='input-group input-group-sm'>";
 		page += "<select id='page-template-" + i + "' class='page-template form-control'></select>";
+        page += "<span class='input-group-btn'>";
+		page += "<button type='button' class='btn btn-default' onclick=''><span class='glyphicon glyphicon-download'></span> PDF</button>";
+		page += "</span>";
+		page += "</div>";
 		page += "<div class='page page-iso'><iframe id='page-" + i + "' frameborder='0'></iframe></div>";
 		page += "</div>";
 		page += "</div>";
