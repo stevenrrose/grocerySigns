@@ -75,7 +75,7 @@ function fetch(asin, callback) {
 				data: {
 					title: {sel:"#btAsinTitle"},
 					price: {sel:"#actualPriceValue,span.pa_price,span.priceLarge"},
-					vendor: {sel:".brandLink a,span:starts-with('by') a"}
+					vendor: {sel:".brandLink a,span:starts-with('by') a:first-child"}
 				}
 			}
 		},
