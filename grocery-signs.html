@@ -52,7 +52,7 @@
         
         <!-- Parameters -->
         <div class="panel panel-default">
-            <div class="panel-body">
+            <div class="panel-heading">
                 <form class="form-horizontal" role="form">
                     <!-- Layout -->
                     <div class="form-group">
@@ -84,19 +84,27 @@
 						</script>
                     </div>
 					
-                    <!-- Template fields -->
+                    <!-- Autofill -->
                     <div class="form-group">
                         <label class="col-sm-3 control-label">Autofill</label>
                         <div class="col-sm-9">
-							<div class="form-inline">
+							<div class="input-group">
 								<select id="autofill-provider" class="form-control">
 									<option value="amazon" selected>Amazon</option>
 								</select>
-								<button type="button" id="autofill" class="btn btn-default form-control" onclick="scrapeFields()"><span class="glyphicon glyphicon-refresh"></span> Go!</button>
-							</div>
+								<span class="input-group-btn">
+									<button type="button" id="autofill" class="btn btn-default" onclick="scrapeFields()"><span class="glyphicon glyphicon-refresh"></span> Go!</button>
+								</span>
+							</div>								
 							<p id="scrapeMessage" class="help-block"></p>
                         </div>
                     </div>
+				</form>
+			</div>
+					
+            <div class="panel-body">
+                <form class="form-horizontal" role="form">
+                    <!-- Template fields -->
                     <div class="form-group">
                         <label for="FIELD01" class="col-sm-3 control-label">FIELD01</label>
                         <div class="col-sm-9">
