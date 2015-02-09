@@ -35,7 +35,7 @@ function normalizeString(s) {
 }
 
 /**
- * Word fitting algorithm.
+ *  Word fitting algorithm.
  *  
  *  Try to form lines of harmonious proportions. To do so, try all possible
  *  combinations of words and keep the narrowest one. This is a very naive
@@ -88,7 +88,7 @@ function fitWords(doc, words, nbLines) {
 }
 
 /**
- * Word wrap algorithm.
+ *  Word wrap algorithm.
  *
  *  Calls *fitWords* with increasing *nbLines* values until an acceptable 
  *  scaling ratio is found.
@@ -124,14 +124,15 @@ function wrapText(doc, words, nbLines, options) {
  */
 
 /**
- *  Refresh the PDF output frames.
+ *  Generate PDF from input fields for a given template.
  *  
- *  Typically called from input change event handlers.
- *  
- *  @param output 		Output iframe.
  *  @param template		Template descriptor.
+ *  
+ *  @return Stream object, caller should bind the 'finish' event to get the generated data.
+ *  
+ *  @see refreshFrame()
  */
-function refreshFrame(output, template) {
+function generatePDF(template) {
     // Create PDF document with template size.
     var doc = new PDFDocument({size: [template.width, template.height]});
     var stream = doc.pipe(blobStream());
@@ -296,11 +297,11 @@ function refreshFrame(output, template) {
 		}
 	}
 
+	// Return stream to caller, which should typically bind the 'finish' event to get 
+	// the generated data.
     // Output the PDF blob into given iframe.
     doc.end();
-    stream.on('finish', function() {
-        output.src = stream.toBlobURL('application/pdf');
-    });
+    return stream;
 }
 
 
@@ -383,7 +384,7 @@ function buildPages() {
         page += "<div class='input-group input-group-sm'>";
 		page += "<select id='page-template-" + i + "' class='page-template form-control'></select>";
         page += "<span class='input-group-btn'>";
-		page += "<button type='button' class='btn btn-default' onclick=''><span class='glyphicon glyphicon-download'></span> PDF</button>";
+		page += "<button type='button' class='btn btn-default' onclick='downloadPDF($(\"#page-template-" + i + "\").val())'><span class='glyphicon glyphicon-download'></span> PDF</button>";
 		page += "</span>";
 		page += "</div>";
 		page += "<div class='page page-iso'><iframe id='page-" + i + "' frameborder='0'></iframe></div>";
@@ -418,6 +419,42 @@ function buildPages() {
 }
 
 /**
+ *  Download the PDF for the given template.
+ *  
+ *  @param templateName		Template name.
+ *  
+ *  @see generatePDF()
+ */
+function downloadPDF(templateName) {
+	console.log(templateName);
+    var stream = generatePDF(templates[templateName]);
+
+    // Output the PDF blob into given iframe.
+    stream.on('finish', function() {
+        saveAs(stream.toBlob('application/pdf'), templateName + ".pdf");
+    });
+}
+
+/**
+ *  Refresh the PDF output frame.
+ *  
+ *  Typically called from input change event handlers.
+ *  
+ *  @param output 		Output iframe.
+ *  @param template		Template descriptor.
+ *  
+ *  @see generatePDF()
+ */
+function refreshFrame(output, template) {
+    var stream = generatePDF(template);
+
+    // Output the PDF blob into given iframe.
+    stream.on('finish', function() {
+        output.src = stream.toBlobURL('application/pdf');
+    });
+}
+
+/**
  *  Refresh all active pages.
  */
 function refresh() {
@@ -442,7 +479,7 @@ function scheduleRefresh() {
 }
 
 /**
- * Update progress information during scraping.
+ *  Update progress information during scraping.
  *
  *	@param step			Step (starts at 1).
  *	@param nbSteps		Total number of steps.
@@ -455,7 +492,7 @@ function progress(step, nbSteps, stepLabel) {
 }
 
 /**
- * Enable/disable interface.
+ *  Enable/disable interface.
  *
  *	@param enabled	Whether to enable or disable interface.
  */
@@ -486,7 +523,7 @@ function randomStr(size) {
 }
 
 /**
- * Amazon product callback: display result in table.
+ *  Amazon product callback: display result in table.
  *
  *	@param asin		ASIN of the scraped product.
  *	@param info		Product info or undefined if failure
@@ -515,7 +552,7 @@ function fetchCallback(asin, info) {
 }
 
 /**
- * Search for random Amazon products and display results in table.
+ *  Search for random Amazon products and display results in table.
  */
 function scrapeRandom() {
 	// Disable interface elements.
@@ -543,7 +580,7 @@ function scrapeRandom() {
 	});
 }
 
-
+//TODO
 function scrapeFields() {
 	console.log("autofill");
 	scrapeRandom();
