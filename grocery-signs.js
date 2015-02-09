@@ -496,7 +496,7 @@ function fetchCallback(asin, info) {
 		
 		$("#FIELD01").val(info.title);
 		$("#FIELD02").val(info.vendor);
-		$("#FIELD03").val(info.price);
+		$("#FIELD03").val(info.price.substring(1) /* remove leading $ */);
 		$("#FIELD08").val(asin);
 		refresh();
 	} else {
