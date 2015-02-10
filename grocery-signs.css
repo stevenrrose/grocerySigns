@@ -1,19 +1,50 @@
-/* Control panel is fixed on the left side. */
-.container {
-	position: fixed;
-	width: 350px
+/* On XS devices (default), top-down layout. */
+
+/* - No gridded view for pages. */
+#layout {
+	display: none;
 }
 
-/* Output frame fills the remaining space. */
-#pages {
-	position: fixed;
-	left: 350px;
-	right: 0;
-	top: 0;
-	bottom: 0;
-	overflow: auto;
-	padding: 10px;
+/* - Show field panel collapse button. */
+#parameters {
+	position: relative;
 }
+#fieldsCollapse {
+	border: none;
+	outline: none;
+	background: none;
+	position: absolute;
+	right: 0;
+	bottom: 0;
+}
+
+/* Beginning at small devices, control panel fixed on left side. */
+@media (min-width: 768px) {
+	/* - Control panel is fixed on the left side. */
+	.container {
+		position: fixed;
+		width: 350px;
+		height: 100%;
+		overflow-y: auto;
+	}
+	
+	/* - Output frame fills the remaining space. */
+	#pages {
+		position: fixed;
+		left: 350px;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		overflow: auto;
+		padding: 10px;
+	}
+	
+	/* - Show gridded view control. */
+	#layout {
+		display: block;
+	}
+}
+
 
 /* Output pages with fixed aspect ratio trick: */
 /* - Generic page wrapper class: full-width element combined with ratio-specific class. */

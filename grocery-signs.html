@@ -55,10 +55,10 @@
         
         <!-- Parameters -->
         <div class="panel panel-default">
-            <div class="panel-heading">
+            <div id="parameters" class="panel-heading">
                 <form class="form-horizontal" role="form">
                     <!-- Layout -->
-                    <div class="form-group">
+                    <div id="layout" class="form-group">
                         <label class="col-sm-3 control-label">Display</label>
                         <div class="col-sm-9">
 							<div class="form-inline">
@@ -86,7 +86,7 @@
 						$("#rows").change(buildPages);
 						</script>
                     </div>
-					
+
                     <!-- Autofill -->
                     <div class="form-group">
                         <label class="col-sm-3 control-label">Autofill</label>
@@ -103,11 +103,14 @@
                         </div>
                     </div>
 				</form>
+				<button id="fieldsCollapse" type="button" data-toggle="collapse" data-target="#fields" aria-expanded="false" aria-controls="fields" title="Show/hide field panel">
+					<span class="glyphicon glyphicon-chevron-up"></span>
+				</button>
 			</div>
 					
-            <div class="panel-body">
+			<!-- Template fields -->
+            <div id="fields" class="panel-body collapse in">
                 <form class="form-horizontal" role="form">
-                    <!-- Template fields -->
                     <div class="form-group">
                         <label for="FIELD01" class="col-sm-3 control-label">FIELD01</label>
                         <div class="col-sm-9">
@@ -161,6 +164,12 @@
 					</script>
                 </form>
             </div>
+			<script>
+			// Toggle collapse button icon.
+			$("#fields")
+				.on('hide.bs.collapse', function () {$("#fieldsCollapse .glyphicon").removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");})
+				.on('show.bs.collapse', function () {$("#fieldsCollapse .glyphicon").removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-up");});
+			</script>
         </div>
     </div>
 	
