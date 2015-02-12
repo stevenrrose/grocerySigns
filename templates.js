@@ -28,7 +28,8 @@
  *  - left, top, right, bottom		Box coordinates (see *Coordinate specifiers*).
  *  - inverted [default false]		If true, field is white text on black box.
  *  - type [default 'text'] 		Field type, must be either 'text' for regular fields or 
- *  *								'price' for price fields.
+ *									'price' for price fields.
+ *  - maxLength						Maximum character length of output strings.
  *  
  *  Fields can also override the following template properties:
  *  
@@ -94,12 +95,12 @@ var templates = {
 		padX: 		10, 
 		padY: 		0,
 		fields : {
-			"FIELD01" : { left: 0,					top: 77,  right: 612,  bottom: 307  },
-			"FIELD02" : { left: 0,					top: 0,	  right: 612,  bottom: 77,  inverted: true },
-			"FIELD03" : { left: 0,					top: 384, right: 612,  bottom: 538, type: 'price', currency: "$", separator: ".", mainHeight: 408, mainShift: -55 },
-			"FIELD04" : { left: 0,					top: 307, right: 612,  bottom: 384  },
-			"FIELD05" : { left: "FIELD03.separator", top: 538, right: 612, bottom: 634  },
-			"FIELD06" : { left: "FIELD03.separator", top: 634, right: 612, bottom: 730  }
+			"FIELD01" : { left: 0,					 top: 77,  right: 612,  bottom: 307  },
+			"FIELD02" : { left: 0,					 top: 0,   right: 612,  bottom: 77,  inverted: true },
+			"FIELD03" : { left: 0,					 top: 384, right: 612,  bottom: 538, type: 'price', currency: "$", separator: ".", mainHeight: 408, mainShift: -55 },
+			"FIELD04" : { left: 0,					 top: 307, right: 612,  bottom: 384, maxLength: 10},
+			"FIELD05" : { left: "FIELD03.separator", top: 538, right: 612,  bottom: 634  },
+			"FIELD06" : { left: "FIELD03.separator", top: 634, right: 612,  bottom: 730  }
 		}
 	},
 	"SansPosterBold (A4)" : {
@@ -128,12 +129,12 @@ var templates = {
 		padX: 		10, 
 		padY: 		10,
 		fields : {
-			"FIELD01" : { left: 0,					top: 77,  right: 612,  bottom: 307  },
-			"FIELD02" : { left: 0,					top: 0,	  right: 612,  bottom: 77,  inverted: true },
-			"FIELD03" : { left: 0,					top: 384, right: 612,  bottom: 538, type: 'price', currency: "$", separator: ".", mainHeight: 408, mainShift: 0 },
-			"FIELD04" : { left: 0,					top: 307, right: 612,  bottom: 384  },
-			"FIELD05" : { left: "FIELD03.separator", top: 538, right: 612, bottom: 634  },
-			"FIELD06" : { left: "FIELD03.separator", top: 634, right: 612, bottom: 730  }
+			"FIELD01" : { left: 0,					 top: 77,  right: 612,  bottom: 307  },
+			"FIELD02" : { left: 0,					 top: 0,   right: 612,  bottom: 77,  inverted: true },
+			"FIELD03" : { left: 0,					 top: 384, right: 612,  bottom: 538, type: 'price', currency: "$", separator: ".", mainHeight: 408, mainShift: -55 },
+			"FIELD04" : { left: 0,					 top: 307, right: 612,  bottom: 384  },
+			"FIELD05" : { left: "FIELD03.separator", top: 538, right: 612,  bottom: 634  },
+			"FIELD06" : { left: "FIELD03.separator", top: 634, right: 612,  bottom: 730  }
 		}
 	},
 };

@@ -211,6 +211,7 @@ function generatePDF(template) {
 	 
 			// Get & normalize field value.
 			var text = normalizeString($("#"+id).val());
+			if (field.maxLength) text = text.substring(0, field.maxLength);
 			if (text.length > 0) {
 				// Text origin.
 				var padX = (field.padX || template.padX || 0),
