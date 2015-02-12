@@ -75,12 +75,13 @@ function fetch(asin, callback) {
 				data: {
 					title: {sel:"#btAsinTitle"},
 					price: {sel:"#actualPriceValue,span.pa_price,span.priceLarge"},
-					vendor: {sel:".brandLink a,span:starts-with('by') a:first-child"}
+					vendor: {sel:"#brand,.brandLink > a,span:starts-with('by') a:first"}
 				}
 			}
 		},
 		function(data) {
-			callback(asin, data[0][0]);
+			var info = data[0][0];
+			callback($.extend({success: info ? true : false, asin: asin, url: url}, info));
 		}
 	);
 }

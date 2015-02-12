@@ -80,17 +80,16 @@ function enableInterface(enabled) {
 /**
  * Amazon product callback: display result in table.
  *
- *	@param asin		ASIN of the scraped product.
- *	@param info		Product info or undefined if failure
+ *	@param info		Product info.
  *
  *	@see fetch()
  */
-function fetchCallback(asin, info) {
-	if (info) {
+function fetchCallback(info) {
+	if (info.success) {
 		// Success, display product data.
 		$("#results").find('tbody')
 			.append($('<tr>')
-				.append($('<td>').append($('<a target="_blank" href=http://www.amazon.com/dp/' + asin + '>').text(asin)))
+				.append($('<td>').append($('<a target="_blank" href="' + info.url + '">').text(info.asin)))
 				.append($('<td>').text(info.price))
 				.append($('<td>').text(info.vendor))
 				.append($('<td>').text(info.title))
@@ -99,7 +98,7 @@ function fetchCallback(asin, info) {
 		// Failure.
 		$("#results").find('tbody')
 			.append($('<tr class="danger">')
-				.append($('<td>').append($('<a target="_blank" href=http://www.amazon.com/dp/' + asin + '>').text(asin)))
+				.append($('<td>').append($('<a target="_blank" href="' + info.url + '">').text(info.asin)))
 				.append($('<td>'))
 				.append($('<td>'))
 				.append($('<td>').text("Failure"))
