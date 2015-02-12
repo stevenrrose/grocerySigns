@@ -254,6 +254,7 @@ function generatePDF(template) {
 						var separator = (field.separator || ".");
 						var parts = text.split(separator);
 						var main = parts[0];
+						if (main[0] == currency) main = main.substring(1);
 						var decimal = parts[1] || "  ";
 						
 						// Compute X scaling of currency+main+decimal parts.
@@ -579,7 +580,7 @@ function fetchCallback(info) {
 		
 		$("#FIELD01").val(info.title);
 		$("#FIELD02").val(info.vendor);
-		$("#FIELD03").val(info.price.substring(1) /* remove leading $ */);
+		$("#FIELD03").val(info.price);
 		$("#FIELD08").val(info.asin);
 		refresh();
 	} else {
