@@ -75,7 +75,9 @@ function fetch(asin, callback) {
 				data: {
 					title: {sel:"#btAsinTitle"},
 					price: {sel:"#actualPriceValue,span.pa_price,span.priceLarge"},
-					vendor: {sel:"#brand,.brandLink > a,span:starts-with('by') a:first"}
+					vendor: {sel:"#brand,.brandLink > a,span:starts-with('by') a:first", method: 'text'},
+					features: {sel:"#feature-bullets-atf", scrape: {iterator: "li", data: 'text'}},
+					description: function() {return $(this).parent().find("#productDescription > .content").text();},
 				}
 			}
 		},

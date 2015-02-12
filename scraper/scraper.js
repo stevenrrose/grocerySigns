@@ -85,6 +85,7 @@ function enableInterface(enabled) {
  *	@see fetch()
  */
 function fetchCallback(info) {
+	console.log(info);		
 	if (info.success) {
 		// Success, display product data.
 		$("#results").find('tbody')
@@ -93,6 +94,14 @@ function fetchCallback(info) {
 				.append($('<td>').text(info.price))
 				.append($('<td>').text(info.vendor))
 				.append($('<td>').text(info.title))
+			)
+			.append($('<tr>')
+				.append($('<td colspan="2">'))
+				.append($('<td colspan="2">').text(info.features))
+			)
+			.append($('<tr>')
+				.append($('<td colspan="2">'))
+				.append($('<td colspan="2">').text(info.description))
 			);
 	} else {
 		// Failure.
