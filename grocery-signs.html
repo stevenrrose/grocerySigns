@@ -21,6 +21,12 @@
     <script src="pdfkit.js"></script>
     <script src="blob-stream.js"></script>
 
+	<!-- PDF.js -->
+	<script src="pdfjs/build/pdf.js"></script>
+	<script>
+	PDFJS.workerSrc = "pdfjs/build/pdf.worker.js";
+	</script>
+
     <!-- FileSaver/saveAs for PDF download (https://github.com/eligrey/FileSaver.js) -->
     <script src="FileSaver.min.js"></script>
     
@@ -99,12 +105,12 @@
 									<button type="button" id="autofill" class="btn btn-default" onclick="scrapeFields()"><span class="glyphicon glyphicon-refresh"></span> Go!</button>
 								</span>
 							</div>								
-							<p id="scrapeMessage" class="help-block"></p>
                         </div>
                     </div>
 				</form>
-				<button id="fieldsCollapse" type="button" data-toggle="collapse" data-target="#fields" aria-expanded="false" aria-controls="fields" title="Show/hide field panel">
-					<span class="glyphicon glyphicon-chevron-up"></span>
+				<button id="fieldsCollapse" type="button" data-toggle="collapse" data-target="#fields" aria-expanded="false" aria-controls="fields">
+					<span class="caret"></span>
+					<span class="sr-only">Show/hide field panel</span>
 				</button>
 			</div>
 					
@@ -167,8 +173,8 @@
 			<script>
 			// Toggle collapse button icon.
 			$("#fields")
-				.on('hide.bs.collapse', function () {$("#fieldsCollapse .glyphicon").removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");})
-				.on('show.bs.collapse', function () {$("#fieldsCollapse .glyphicon").removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-up");});
+				.on('hide.bs.collapse', function () {$("#fieldsCollapse").addClass("dropup");})
+				.on('show.bs.collapse', function () {$("#fieldsCollapse").removeClass("dropup");})
 			</script>
         </div>
     </div>

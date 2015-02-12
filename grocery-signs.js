@@ -1,4 +1,8 @@
 var DEBUG=false;
+	
+// PDF.js doesn't like concurrent workers so disable them. This will 
+// generate 'Warning: Setting up fake worker.' on the console.
+PDFJS.disableWorker = true;
 
 /*
  *
@@ -299,7 +303,6 @@ function generatePDF(template) {
 
 	// Return stream to caller, which should typically bind the 'finish' event to get 
 	// the generated data.
-    // Output the PDF blob into given iframe.
     doc.end();
     return stream;
 }
@@ -310,6 +313,9 @@ function generatePDF(template) {
  * Interface functions.
  *
  */
+ 
+/** Default page format class (see grocery-signs.css) */
+var pageFormatClass = "page-iso";
 
 /** Remember selected templates for each page so that we can change the layout
  *  while preserving the template order. By default pages display all available
@@ -387,7 +393,7 @@ function buildPages() {
 		page += "<button type='button' class='btn btn-default' onclick='downloadPDF($(\"#page-template-" + i + "\").val())'><span class='glyphicon glyphicon-download'></span> PDF</button>";
 		page += "</span>";
 		page += "</div>";
-		page += "<div class='page page-iso'><iframe id='page-" + i + "' frameborder='0'></iframe></div>";
+		page += "<div id='page-" + i + "' class='page " + pageFormatClass + "'></div>";
 		page += "</div>";
 		page += "</div>";
 		$pages.append(page);
@@ -426,32 +432,65 @@ function buildPages() {
  *  @see generatePDF()
  */
 function downloadPDF(templateName) {
-	console.log(templateName);
     var stream = generatePDF(templates[templateName]);
 
-    // Output the PDF blob into given iframe.
+    // Download the blob as PDF.
     stream.on('finish', function() {
         saveAs(stream.toBlob('application/pdf'), templateName + ".pdf");
     });
 }
 
 /**
+ *  Render PDF in a canvas using PDF.js.
+ *  
+ *  @param url       	URL of PDF to render (supports blob and data URIs).
+ *  @param container	Canvas container.
+
+
+ */
+function renderPDF(url, container) {
+    PDFJS.getDocument(url).then(function(pdfDoc) {
+		/* Only render the first page. */
+		pdfDoc.getPage(1).then(function(page) {
+			/* Compute ideal scaling factor: twice the page width for optimal subsampling. */
+			var pageWidth = page.getViewport(1).width;
+			var scale = 2*$(container).width()/pageWidth;
+			
+			/* Create viewport and canvas. */
+			var viewport = page.getViewport(scale);
+			var canvas = document.createElement('canvas');
+			canvas.height = viewport.height;
+			canvas.width = viewport.width;
+			$(container).empty().append(canvas);
+
+			/* Render page. */
+			page.render({
+				canvasContext: canvas.getContext('2d'),
+				viewport: viewport
+			});
+		});
+    });
+}   
+
+
+/**
  *  Refresh the PDF output frame.
  *  
  *  Typically called from input change event handlers.
  *  
- *  @param output 		Output iframe.
+ *  @param container 	Output container.
  *  @param template		Template descriptor.
  *  
  *  @see generatePDF()
  */
-function refreshFrame(output, template) {
+function refreshFrame(container, template) {
     var stream = generatePDF(template);
 
-    // Output the PDF blob into given iframe.
+    // Output the PDF blob into given container.
     stream.on('finish', function() {
-        output.src = stream.toBlobURL('application/pdf');
-    });
+		var url = stream.toBlobURL('application/pdf');
+		renderPDF(url, container);
+	});
 }
 
 /**
@@ -459,7 +498,7 @@ function refreshFrame(output, template) {
  */
 function refresh() {
 	// Call refreshFrame on each active page.
-	$(".page iframe").each(function(i, e) {
+	$(".page").each(function(i, e) {
 		var templateName = $("#page-template-" + i).val();
 		refreshFrame(e, templates[templateName]);
 	});
@@ -475,7 +514,7 @@ function scheduleRefresh() {
 	if (refreshEvent) {
 		clearTimeout(refreshEvent);
 	}
-	refreshEvent = setTimeout(function() {console.log("refresh", refreshEvent); refresh(); refreshEvent = null;}, refreshDelay);
+	refreshEvent = setTimeout(function() {refresh(); refreshEvent = null;}, refreshDelay);
 }
 
 /**
@@ -500,12 +539,15 @@ function enableInterface(enabled) {
 	$("#progressDialog").modal(enabled?'hide':'show');
 }
 
-function scrapeMessage(message) {
-	if (message) {
-        $("#scrapeMessage").text(message).closest(".form-group").addClass("has-error bg-danger");
-    } else {
-        $("#scrapeMessage").empty().closest(".form-group").removeClass("has-error bg-danger");
-	}
+
+function scrapeMessage(success, title, message) {
+	$("#parameters").append(
+		  "<div class='alert alert-dismissible alert-" + (success ? "success" : "danger") + " fade in' role='alert'>"
+		+ "<button type='button' class='close' data-dismiss='alert' aria-label='Close'><span aria-hidden='true'>&times;</span></button>"
+		+ "<strong>" + title + "</strong> "
+		+ message
+		+ "</div>"
+	);
 }
 
 /**
@@ -525,26 +567,25 @@ function randomStr(size) {
 /**
  *  Amazon product callback: display result in table.
  *
- *	@param asin		ASIN of the scraped product.
  *	@param info		Product info or undefined if failure
  *
  *	@see fetch()
  */
-function fetchCallback(asin, info) {
-	if (info) {
+function fetchCallback(info) {
+	if (info.success) {
 		// Success, display product data.
-		console.log("success", asin, info);
-		scrapeMessage();
+		console.log("success", info);
+		scrapeMessage(true, "Success!", "ASIN = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.asin + "</a>");
 		
 		$("#FIELD01").val(info.title);
 		$("#FIELD02").val(info.vendor);
 		$("#FIELD03").val(info.price.substring(1) /* remove leading $ */);
-		$("#FIELD08").val(asin);
+		$("#FIELD08").val(info.asin);
 		refresh();
 	} else {
 		// Failure.
-		console.log("failure", asin);
-		scrapeMessage("Scraping failed! ASIN = " + asin);
+		console.log("failure", info.asin);
+		scrapeMessage(false, "Scraping failed!", "ASIN = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.asin + "</a>");
 	}
 
 	// Done!
@@ -565,7 +606,7 @@ function scrapeRandom() {
 		if (!results || !results.length) {
 			// No or invalid results.
 			console.log("failure", "Empty results");
-			scrapeMessage("Scraping failed! Search string = " + str);
+			scrapeMessage(false, "Scraping failed!", "Search string = " + str);
 			
 			// Stop there.
 			enableInterface(true);
