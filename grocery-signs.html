@@ -105,6 +105,7 @@
 									<button type="button" id="autofill" class="btn btn-default" onclick="scrapeFields()"><span class="glyphicon glyphicon-refresh"></span> Go!</button>
 								</span>
 							</div>								
+							<div class="checkbox"><label><input id="randomize" type="checkbox">Randomize fields</label></div>
                         </div>
                     </div>
 				</form>
@@ -114,63 +115,27 @@
 				</button>
 			</div>
 					
-			<!-- Template fields -->
+			<!-- Template field container -->
             <div id="fields" class="panel-body collapse in">
-                <form class="form-horizontal" role="form">
-                    <div class="form-group">
-                        <label for="FIELD01" class="col-sm-3 control-label">FIELD01</label>
-                        <div class="col-sm-9">
-                            <input class="FIELD form-control" id="FIELD01" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="FIELD02" class="col-sm-3 control-label">FIELD02</label>
-                        <div class="col-sm-9">
-                            <input class="FIELD form-control" id="FIELD02" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="FIELD03" class="col-sm-3 control-label">FIELD03</label>
-                        <div class="col-sm-9">
-                            <input class="FIELD form-control" id="FIELD03" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="FIELD04" class="col-sm-3 control-label">FIELD04</label>
-                        <div class="col-sm-9">
-                            <input class="FIELD form-control" id="FIELD04" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="FIELD05" class="col-sm-3 control-label">FIELD05</label>
-                        <div class="col-sm-9">
-                            <input class="FIELD form-control" id="FIELD05" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="FIELD06" class="col-sm-3 control-label">FIELD06</label>
-                        <div class="col-sm-9">
-                            <input class="FIELD form-control" id="FIELD06" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="FIELD07" class="col-sm-3 control-label">FIELD07</label>
-                        <div class="col-sm-9">
-                            <input class="FIELD form-control" id="FIELD07" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="FIELD08" class="col-sm-3 control-label">FIELD08</label>
-                        <div class="col-sm-9">
-                            <input class="FIELD form-control" id="FIELD08" />
-                        </div>
-                    </div>
-					<script>
-					$(".FIELD").change(scheduleRefresh).keyup(scheduleRefresh);
-					</script>
-                </form>
-            </div>
+                <form class="form-horizontal" role="form"></form>
+			</div>
 			<script>
+			// Generate fields.
+			var nbFields = 0;
+			$.each(templates, function(key, template) {
+				nbFields = Math.max(nbFields, Object.keys(template.fields).length);
+			});			
+			for (var i=1; i <= nbFields; i++) {
+				var id = fieldId(i);
+				$("#fields form").append(
+					  "<div class='form-group'>"
+					+ "<label for='" + id + "' class='col-sm-3 control-label'>" + id + "</label>"
+					+ "<div class='col-sm-9'><input class='FIELD form-control' id='" + id + "' /></div>"
+                    + "</div>"
+				);
+			}
+			$(".FIELD").change(scheduleRefresh).keyup(scheduleRefresh);
+			
 			// Toggle collapse button icon.
 			$("#fields")
 				.on('hide.bs.collapse', function () {$("#fieldsCollapse").addClass("dropup");})

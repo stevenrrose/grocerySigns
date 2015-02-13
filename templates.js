@@ -18,6 +18,7 @@
  *  					extra line.
  *  - padX, padY		Internal box padding in points.
  *  - fields			List of fields.
+ *  - maxLength			Maximum character length of output strings.
  *  
  *  
  *  ## Field properties ##
@@ -29,13 +30,13 @@
  *  - inverted [default false]		If true, field is white text on black box.
  *  - type [default 'text'] 		Field type, must be either 'text' for regular fields or 
  *									'price' for price fields.
- *  - maxLength						Maximum character length of output strings.
  *  
  *  Fields can also override the following template properties:
  *  
  *  - font
  *  - maxRatio
  *  - padX, padY
+ *  - maxLength			Maximum character length of output strings.
  *  
  *  
  *  ## Price field properties ##
@@ -85,6 +86,10 @@
  *  
  *  @see refresh()
  */
+ 
+/** Global max length for text fields. */
+var globalMaxLength = 100;
+
 var templates = {
 	"Raiders (Letter)" : {
 		/* Letter */
@@ -97,10 +102,10 @@ var templates = {
 		fields : {
 			"FIELD01" : { left: 0,					 top: 77,  right: 612,  bottom: 307  },
 			"FIELD02" : { left: 0,					 top: 0,   right: 612,  bottom: 77,  inverted: true },
-			"FIELD03" : { left: 0,					 top: 384, right: 612,  bottom: 538, type: 'price', currency: "$", separator: ".", mainHeight: 408, mainShift: -55 },
-			"FIELD04" : { left: 0,					 top: 307, right: 612,  bottom: 384, maxLength: 10},
+			"FIELD03" : { left: 0,					 top: 384, right: 612,  bottom: 538, maxLength: 10, type: 'price', currency: "$", separator: ".", mainHeight: 408, mainShift: -55 },
+			"FIELD04" : { left: 0,					 top: 307, right: 612,  bottom: 384, maxLength: 20 },
 			"FIELD05" : { left: "FIELD03.separator", top: 538, right: 612,  bottom: 634  },
-			"FIELD06" : { left: "FIELD03.separator", top: 634, right: 612,  bottom: 730  }
+			"FIELD06" : { left: "FIELD03.separator", top: 634, right: 612,  bottom: 730  },
 		}
 	},
 	"SansPosterBold (A4)" : {
@@ -114,10 +119,10 @@ var templates = {
 		fields : {
 			"FIELD01" : { left: 0,					 top: "FIELD02.bottom", right: "width", bottom: 307  },
 			"FIELD02" : { left: 0,					 top: 0,	  			right: "width", bottom: 77,  inverted: true },
-			"FIELD03" : { left: 0,					 top: 384, 				right: "width", bottom: 538, type: 'price', currency: "$", separator: ".", mainHeight: 408, mainShift: -55 },
+			"FIELD03" : { left: 0,					 top: 384, 				right: "width", maxLength: 10, bottom: 538, type: 'price', currency: "$", separator: ".", mainHeight: 408, mainShift: -55 },
 			"FIELD04" : { left: 0,					 top: 307, 				right: "width", bottom: 384  },
 			"FIELD05" : { left: "FIELD03.separator", top: 538, 				right: "width", bottom: 634  },
-			"FIELD06" : { left: "FIELD03.separator", top: 634, 				right: "width", bottom: 730  }
+			"FIELD06" : { left: "FIELD03.separator", top: 634, 				right: "width", bottom: 730  },
 		}
 	},
 	"Helvetica (Letter)" : {
@@ -131,10 +136,10 @@ var templates = {
 		fields : {
 			"FIELD01" : { left: 0,					 top: 77,  right: 612,  bottom: 307  },
 			"FIELD02" : { left: 0,					 top: 0,   right: 612,  bottom: 77,  inverted: true },
-			"FIELD03" : { left: 0,					 top: 384, right: 612,  bottom: 538, type: 'price', currency: "$", separator: ".", mainHeight: 408, mainShift: -55 },
-			"FIELD04" : { left: 0,					 top: 307, right: 612,  bottom: 384  },
+			"FIELD03" : { left: 0,					 top: 384, right: 612,  bottom: 538, maxLength: 10, type: 'price', currency: "$", separator: ".", mainHeight: 408 },
+			"FIELD04" : { left: 0,					 top: 307, right: 612,  bottom: 384, maxLength: 15 },
 			"FIELD05" : { left: "FIELD03.separator", top: 538, right: 612,  bottom: 634  },
-			"FIELD06" : { left: "FIELD03.separator", top: 634, right: 612,  bottom: 730  }
+			"FIELD06" : { left: "FIELD03.separator", top: 634, right: 612,  bottom: 730  },
 		}
 	},
 };

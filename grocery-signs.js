@@ -1,5 +1,5 @@
 var DEBUG=false;
-	
+
 // PDF.js doesn't like concurrent workers so disable them. This will 
 // generate 'Warning: Setting up fake worker.' on the console.
 PDFJS.disableWorker = true;
@@ -19,6 +19,24 @@ fetchUrl = "scraper/fetch.php";
  * Algorithms and functions.
  *
  */
+
+/**
+ * 	Randomize array element order in-place.
+ * 	Using Fisher-Yates shuffle algorithm.
+ *
+ *  @param array	Array to shuffle.
+ *
+ *	@see http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array#answer-12646864
+ */
+function shuffleArray(array) {
+    for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+    return array;
+}
 
 /**
  *  Normalize string:
@@ -211,7 +229,8 @@ function generatePDF(template) {
 	 
 			// Get & normalize field value.
 			var text = normalizeString($("#"+id).val());
-			if (field.maxLength) text = text.substring(0, field.maxLength);
+			maxLength = field.maxLength || template.maxLength || globalMaxLength;
+			if (maxLength) text = text.substring(0, maxLength);
 			if (text.length > 0) {
 				// Text origin.
 				var padX = (field.padX || template.padX || 0),
@@ -331,6 +350,17 @@ var refreshDelay = 500; /*ms*/
 var refreshEvent = null;
 
 /**
+ *  Get the CSS id of the given field.
+ *  
+ *  @param index 	Field index.
+ *  
+ *  @return CSS id.
+ */
+function fieldId(index) {
+	return ("FIELD" + ((index < 10) ? ("0" + index) : index));
+}
+
+/**
  *  Build the output page elements.
  */
 function buildPages() {
@@ -447,8 +477,6 @@ function downloadPDF(templateName) {
  *  
  *  @param url       	URL of PDF to render (supports blob and data URIs).
  *  @param container	Canvas container.
-
-
  */
 function renderPDF(url, container) {
     PDFJS.getDocument(url).then(function(pdfDoc) {
@@ -473,7 +501,6 @@ function renderPDF(url, container) {
 		});
     });
 }   
-
 
 /**
  *  Refresh the PDF output frame.
@@ -541,7 +568,13 @@ function enableInterface(enabled) {
 	$("#progressDialog").modal(enabled?'hide':'show');
 }
 
-
+/**
+ *  Display scraping result message.
+ *  
+ *  @param success 	Whether the operation was successful.
+ *  @param title   	Message title.
+ *  @param message 	Message body.
+ */
 function scrapeMessage(success, title, message) {
 	$("#parameters").append(
 		  "<div class='alert alert-dismissible alert-" + (success ? "success" : "danger") + " fade in' role='alert'>"
@@ -579,10 +612,23 @@ function fetchCallback(info) {
 		console.log("success", info);
 		scrapeMessage(true, "Success!", "ASIN = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.asin + "</a>");
 		
-		$("#FIELD01").val(info.title);
-		$("#FIELD02").val(info.vendor);
-		$("#FIELD03").val(info.price);
-		$("#FIELD08").val(info.asin);
+		// - Build sentences to display in fields.
+		var sentences = [info.title, info.vendor, info.price]
+			.concat(info.features)
+			.concat(info.description.split(/[.!;]/));
+		console.log(sentences);
+		
+		if ($("#randomize").prop('checked')) {
+			// - Randomize fields.
+			shuffleArray(sentences);
+		}
+
+		// - Display fields.
+		for (var i = 0; i < sentences.length && i < nbFields; i++) {
+			var id = "#" + fieldId(i+1);
+			console.log(id, sentences[i]);
+			$(id).val(sentences[i]);
+		}
 		refresh();
 	} else {
 		// Failure.
