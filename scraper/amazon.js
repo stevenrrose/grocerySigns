@@ -7,6 +7,11 @@
  */
 
 /**
+ *  Dummy function used in Amazon image onload handler, keeps JS happy.
+ */
+function viewCompleteImageLoaded() {}
+
+/**
  * Add missing CSS selectors :starts-with / :ends-with to jQuery.
  */
 $.extend($.expr[":"], {
