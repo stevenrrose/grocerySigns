@@ -1,9 +1,5 @@
 var DEBUG=false;
 
-// PDF.js doesn't like concurrent workers so disable them. This will 
-// generate 'Warning: Setting up fake worker.' on the console.
-PDFJS.disableWorker = true;
-
 /*
  *
  * Scraping.
@@ -20,17 +16,46 @@ fetchUrl = "scraper/fetch.php";
  *
  */
 
+/** Initialize random seed with current timestamp. */
+randomSeed = Date.now();
+
 /**
- * 	Randomize array element order in-place.
- * 	Using Fisher-Yates shuffle algorithm.
+ *  Seeded random number generator as JS doesn't provide one by default.
+ *  
+ *  @see http://indiegamr.com/generate-repeatable-random-numbers-in-js/ for the magic numbers.
+ */
+function srandom() {
+    randomSeed = (randomSeed * 9301 + 49297) % 233280;
+    return randomSeed / 233280;
+}
+
+/**
+ * Generate a random string.
+ *
+ *	@param size		Size of string to generate.
+ */
+function randomStr(size) {
+	var chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+	var str = "";
+	for (var i=0; i < size; i++) {
+		str += chars[Math.floor(Math.random()*chars.length)];
+	}
+	return str;
+}
+
+/**
+ * 	Randomize array element order in-place (using seeded random function).
+ *
+ * 	Uses Fisher-Yates shuffle algorithm.
  *
  *  @param array	Array to shuffle.
  *
+ *  @see srandom()
  *	@see http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array#answer-12646864
  */
 function shuffleArray(array) {
     for (var i = array.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
+        var j = Math.floor(srandom() * (i + 1));
         var temp = array[i];
         array[i] = array[j];
         array[j] = temp;
@@ -138,12 +163,47 @@ function wrapText(doc, words, nbLines, options) {
     }
 }
 
+/**
+ *  Compute actual template field max length; values may be specified as single integer
+ *  or [min, max] randomization intervals (uses seeded random).
+ *  
+ *  @see srandom()
+ */
+function computeActualMaxFieldLengths() {
+	var actualValue = function(spec) {
+		if (spec) {
+			// Option specified.
+			if (spec.length == 2) {
+				// Specified as [min, max].
+				var min=spec[0], max=spec[1];
+				return min + srandom() * (max-min);
+			} else {
+				// Use raw specified value.
+				return spec;
+			}
+		}
+	}
+	$.each(templates, function(key, val) {
+		// Template-level option.
+		val.actualMaxLength = actualValue(val.maxLength);
+		
+		// Field-level options.
+		$.each(val.fields, function(fkey, fval) {
+			fval.actualMaxLength = actualValue(fval.maxLength);
+		});
+	});
+}
+ 
 
 /*
  *
  * PDF Generation.
  *
  */
+
+// PDF.js doesn't like concurrent workers so disable them. This will 
+// generate 'Warning: Setting up fake worker.' on the console.
+PDFJS.disableWorker = true;
 
 /**
  *  Generate PDF from input fields for a given template.
@@ -229,7 +289,7 @@ function generatePDF(template) {
 	 
 			// Get & normalize field value.
 			var text = normalizeString($("#"+id).val());
-			maxLength = field.maxLength || template.maxLength || globalMaxLength;
+			maxLength = field.actualMaxLength || template.actualMaxLength || globalMaxLength;
 			if (maxLength) text = text.substring(0, maxLength);
 			if (text.length > 0) {
 				// Text origin.
@@ -328,6 +388,36 @@ function generatePDF(template) {
     return stream;
 }
 
+/**
+ *  Render PDF in a canvas using PDF.js.
+ *  
+ *  @param url       	URL of PDF to render (supports blob and data URIs).
+ *  @param container	Canvas container.
+ */
+function renderPDF(url, container) {
+    PDFJS.getDocument(url).then(function(pdfDoc) {
+		/* Only render the first page. */
+		pdfDoc.getPage(1).then(function(page) {
+			/* Compute ideal scaling factor: twice the page width for optimal subsampling. */
+			var pageWidth = page.getViewport(1).width;
+			var scale = 2*$(container).width()/pageWidth;
+			
+			/* Create viewport and canvas. */
+			var viewport = page.getViewport(scale);
+			var canvas = document.createElement('canvas');
+			canvas.height = viewport.height;
+			canvas.width = viewport.width;
+			$(container).empty().append(canvas);
+
+			/* Render page. */
+			page.render({
+				canvasContext: canvas.getContext('2d'),
+				viewport: viewport
+			});
+		});
+    });
+}   
+
 
 /*
  *
@@ -348,6 +438,12 @@ var refreshDelay = 500; /*ms*/
 
 /** Last scheduled refresh event. */
 var refreshEvent = null;
+
+/** Last scraped sentences. */
+var scrapedSentences = [];
+
+/** Last random seed at scrape time. */
+var lastRandomSeed = randomSeed;
 
 /**
  *  Get the CSS id of the given field.
@@ -473,36 +569,6 @@ function downloadPDF(templateName) {
 }
 
 /**
- *  Render PDF in a canvas using PDF.js.
- *  
- *  @param url       	URL of PDF to render (supports blob and data URIs).
- *  @param container	Canvas container.
- */
-function renderPDF(url, container) {
-    PDFJS.getDocument(url).then(function(pdfDoc) {
-		/* Only render the first page. */
-		pdfDoc.getPage(1).then(function(page) {
-			/* Compute ideal scaling factor: twice the page width for optimal subsampling. */
-			var pageWidth = page.getViewport(1).width;
-			var scale = 2*$(container).width()/pageWidth;
-			
-			/* Create viewport and canvas. */
-			var viewport = page.getViewport(scale);
-			var canvas = document.createElement('canvas');
-			canvas.height = viewport.height;
-			canvas.width = viewport.width;
-			$(container).empty().append(canvas);
-
-			/* Render page. */
-			page.render({
-				canvasContext: canvas.getContext('2d'),
-				viewport: viewport
-			});
-		});
-    });
-}   
-
-/**
  *  Refresh the PDF output frame.
  *  
  *  Typically called from input change event handlers.
@@ -586,17 +652,28 @@ function scrapeMessage(success, title, message) {
 }
 
 /**
- * Generate a random string.
- *
- *	@param size		Size of string to generate.
+ *  Populate fields 
  */
-function randomStr(size) {
-	var chars = "0123456789abcdefghijklmnopqrstuvwxyz";
-	var str = "";
-	for (var i=0; i < size; i++) {
-		str += chars[Math.floor(Math.random()*chars.length)];
+function populateFields() {
+	var values;
+	if ($("#randomize").prop('checked')) {
+		// Filter out empty strings.
+		values = scrapedSentences.filter(function(val) {return (val != "");});
+		
+		// Randomize remaining strings. Reset random seed first.
+		randomSeed = lastRandomSeed;
+		shuffleArray(values);
+	} else {
+		// Use sentences in order.
+		values = scrapedSentences;
 	}
-	return str;
+
+	// Populate fields with resulting values.
+	for (var i = 0; i < values.length && i < nbFields; i++) {
+		var id = "#" + fieldId(i+1);
+		console.log(id, values[i]);
+		$(id).val(values[i]);
+	}
 }
 
 /**
@@ -608,27 +685,34 @@ function randomStr(size) {
  */
 function fetchCallback(info) {
 	if (info.success) {
-		// Success, display product data.
+		// Success, gather & display product data.
 		console.log("success", info);
 		scrapeMessage(true, "Success!", "ASIN = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.asin + "</a>");
 		
-		// - Build sentences to display in fields.
-		var sentences = [info.title, info.vendor, info.price]
-			.concat(info.features)
-			.concat(info.description.split(/[.!;]/));
-		console.log(sentences);
+		// Build sentences to populate fields with.
+		// - title, vendor and price (even empty to ensure predictable order).
+		scrapedSentences = [
+			normalizeString(info.title), 
+			normalizeString(info.vendor), 
+			normalizeString(info.price),
+		];
+		// - nonempty feature bullet items.
+		$.each(info.features, function(i, v) {
+			v = normalizeString(v);
+			if (v != "") scrapedSentences.push(v);
+		});
+		// - nonempty description sentences.
+		$.each(info.description.split(/[.!;]/), function(i, v) {
+			v = normalizeString(v);
+			if (v != "") scrapedSentences.push(v);
+		});
 		
-		if ($("#randomize").prop('checked')) {
-			// - Randomize fields.
-			shuffleArray(sentences);
-		}
-
-		// - Display fields.
-		for (var i = 0; i < sentences.length && i < nbFields; i++) {
-			var id = "#" + fieldId(i+1);
-			console.log(id, sentences[i]);
-			$(id).val(sentences[i]);
-		}
+		// Remember current random seed for deterministic randomization.
+		lastRandomSeed = randomSeed;
+		
+		// Display results.
+		computeActualMaxFieldLengths();
+		populateFields();
 		refresh();
 	} else {
 		// Failure.
@@ -669,8 +753,10 @@ function scrapeRandom() {
 	});
 }
 
-//TODO
+/**
+ *  Scrape random data from the currently selected provider.
+ */
 function scrapeFields() {
-	console.log("autofill");
+	// TODO depends on provider.
 	scrapeRandom();
 }

@@ -107,6 +107,12 @@
 							</div>								
 							<div class="checkbox"><label><input id="randomize" type="checkbox">Randomize fields</label></div>
                         </div>
+						<script>
+						$("#randomize").change(function(){
+							populateFields();
+							refresh();
+						});
+						</script>
                     </div>
 				</form>
 				<button id="fieldsCollapse" type="button" data-toggle="collapse" data-target="#fields" aria-expanded="false" aria-controls="fields">
