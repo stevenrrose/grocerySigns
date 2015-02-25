@@ -1,5 +1,8 @@
 var DEBUG=false;
 
+// Whether to use FileSave.js' saveAs() or plain <a> link.
+var USE_SAVEAS=false;
+
 /*
  *
  * Scraping.
@@ -9,6 +12,8 @@ var DEBUG=false;
 /** Override default fetch URL. */
 fetchUrl = "scraper/fetch.php";
 
+/** Last scraped ID. */
+var lastScrapedId;
 
 /*
  *
@@ -518,10 +523,16 @@ function buildPages() {
         page += "<div class='input-group input-group-sm'>";
 		page += "<select id='page-template-" + i + "' class='page-template form-control'></select>";
         page += "<span class='input-group-btn'>";
-		page += "<button type='button' class='btn btn-default' onclick='downloadPDF($(\"#page-template-" + i + "\").val())'><span class='glyphicon glyphicon-download'></span> PDF</button>";
+		if (USE_SAVEAS) {
+			// Download uses saveAs().
+			page += "<button type='button' class='btn btn-default' onclick='downloadPDF(" + i + ")'><span class='glyphicon glyphicon-download'></span> PDF</button>";
+		} else {
+			// Use plain download link with attributes set in refreshFrame(). 
+			page += "<a role='button' id='page-download-" + i + "' class='btn btn-default'><span class='glyphicon glyphicon-download'></span> PDF</a>";
+		}
 		page += "</span>";
 		page += "</div>";
-		page += "<div id='page-" + i + "' class='page " + pageFormatClass + "'></div>";
+		page += "<div id='page-" + i + "' data-index='" + i + "' class='page " + pageFormatClass + "'></div>";
 		page += "</div>";
 		page += "</div>";
 		$pages.append(page);
@@ -544,8 +555,7 @@ function buildPages() {
 			selectedTemplates[i] = templateName;
 			
 			// Refresh page.
-			var output = $("#page-" + i)[0];
-			refreshFrame(output, templates[templateName]);
+			refreshFrame(i);
 		});
 	});
 
@@ -553,18 +563,46 @@ function buildPages() {
 }
 
 /**
- *  Download the PDF for the given template.
+ *  Get file name for the given page.
  *  
- *  @param templateName		Template name.
+ *  @param index	Page index.
  *  
  *  @see generatePDF()
+ *  @see refreshFrame()
  */
-function downloadPDF(templateName) {
+function getFileName(index) {
+	var templateName = $("#page-template-" + index).val();
+	
+	if (!lastScrapedId) {
+		// Manual input.
+		return templateName + ".pdf";
+	}
+	
+	var provider = $("#autofill-provider option:selected").text();
+	var filename = provider + "-" + lastScrapedId + "-" + templateName;
+	if ($("#randomize").prop('checked')) {
+		filename += "-" + lastRandomSeed;
+	}
+	return filename + ".pdf";
+}
+
+/**
+ *  Download the PDF for the given page.
+ *  
+ *  @param index	Page index.
+ *  
+ *  @see generatePDF()
+ *  @see getFileName()
+ */
+function downloadPDF(index) {
+	var templateName = $("#page-template-" + index).val();
+	var fileName = getFileName(index);
+	
     var stream = generatePDF(templates[templateName]);
 
     // Download the blob as PDF.
     stream.on('finish', function() {
-        saveAs(stream.toBlob('application/pdf'), templateName + ".pdf");
+        saveAs(stream.toBlob('application/pdf'), fileName);
     });
 }
 
@@ -573,18 +611,30 @@ function downloadPDF(templateName) {
  *  
  *  Typically called from input change event handlers.
  *  
- *  @param container 	Output container.
- *  @param template		Template descriptor.
+ *  @param index	Page index.
  *  
  *  @see generatePDF()
+ *  @see getFileName()
  */
-function refreshFrame(container, template) {
-    var stream = generatePDF(template);
+function refreshFrame(index) {
+	var container = $("#page-" + index);
+	var templateName = $("#page-template-" + index).val();
+	var fileName = getFileName(index);
+	
+    var stream = generatePDF(templates[templateName]);
 
     // Output the PDF blob into given container.
     stream.on('finish', function() {
 		var url = stream.toBlobURL('application/pdf');
 		renderPDF(url, container);
+		if (!USE_SAVEAS) {
+			// Set link attributes.
+			var index = $(container).data("index");
+			$("#page-download-" + index)
+				.attr('href', url)
+				.attr('target', '_blank')
+				.attr('download', fileName);
+		}
 	});
 }
 
@@ -593,9 +643,8 @@ function refreshFrame(container, template) {
  */
 function refresh() {
 	// Call refreshFrame on each active page.
-	$(".page").each(function(i, e) {
-		var templateName = $("#page-template-" + i).val();
-		refreshFrame(e, templates[templateName]);
+	$(".page").each(function(index) {
+		refreshFrame(index);
 	});
 }
 
@@ -671,7 +720,6 @@ function populateFields() {
 	// Populate fields with resulting values.
 	for (var i = 0; i < values.length && i < nbFields; i++) {
 		var id = "#" + fieldId(i+1);
-		console.log(id, values[i]);
 		$(id).val(values[i]);
 	}
 }
@@ -688,6 +736,9 @@ function fetchCallback(info) {
 		// Success, gather & display product data.
 		console.log("success", info);
 		scrapeMessage(true, "Success!", "ASIN = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.asin + "</a>");
+		
+		// Remember ASIN for filename generation.
+		lastScrapedId = info.asin;
 		
 		// Build sentences to populate fields with.
 		// - title, vendor and price (even empty to ensure predictable order).
