@@ -337,9 +337,9 @@ function generatePDF(template) {
 						// a greater Y factor.
 						var currency = (field.currency || "$");
 						var separator = (field.separator || ".");
-						var parts = text.split(separator);
+						var parts = text.split(currency);
+						parts = parts[parts.length-1].split(separator);
 						var main = parts[0];
-						if (main[0] == currency) main = main.substring(1);
 						var decimal = parts[1] || "  ";
 						
 						// Compute X scaling of currency+main+decimal parts.
@@ -692,9 +692,10 @@ function enableInterface(enabled) {
  */
 function scrapeMessage(success, title, message) {
 	$("#parameters").append(
-		  "<div class='alert alert-dismissible alert-" + (success ? "success" : "danger") + " fade in' role='alert'>"
+		  "<div class='alert small alert-dismissible alert-" + (success ? "success" : "danger") + " fade in' role='alert'>"
 		+ "<button type='button' class='close' data-dismiss='alert' aria-label='Close'><span aria-hidden='true'>&times;</span></button>"
-		+ "<strong>" + title + "</strong> "
+		+ "<span class='glyphicon glyphicon-" + (success ? "ok" : "exclamation") + "-sign'></span> "
+		+ "<strong class='sr-only'>" + title + "</strong> "
 		+ message
 		+ "</div>"
 	);
@@ -725,20 +726,19 @@ function populateFields() {
 }
 
 /**
- *  Amazon product callback: display result in table.
+ *  Fetch product callback: display result in fields.
  *
- *	@param info		Product info or undefined if failure
- *
- *	@see fetch()
+ *	@param provider		Product provider descriptor.
+ *	@param info			Product info.
  */
-function fetchCallback(info) {
+function fetchCallback(provider, info) {
+	console.log(info);		
 	if (info.success) {
 		// Success, gather & display product data.
-		console.log("success", info);
-		scrapeMessage(true, "Success!", "ASIN = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.asin + "</a>");
+		scrapeMessage(true, "Success!", provider.name + " ID = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.itemId  + "</a>");
 		
-		// Remember ASIN for filename generation.
-		lastScrapedId = info.asin;
+		// Remember item ID for filename generation.
+		lastScrapedId = info.itemId;
 		
 		// Build sentences to populate fields with.
 		// - title, vendor and price (even empty to ensure predictable order).
@@ -753,7 +753,7 @@ function fetchCallback(info) {
 			if (v != "") scrapedSentences.push(v);
 		});
 		// - nonempty description sentences.
-		$.each(info.description.split(/[.!;]/), function(i, v) {
+		$.each(info.description, function(i, v) {
 			v = normalizeString(v);
 			if (v != "") scrapedSentences.push(v);
 		});
@@ -767,8 +767,7 @@ function fetchCallback(info) {
 		refresh();
 	} else {
 		// Failure.
-		console.log("failure", info.asin);
-		scrapeMessage(false, "Scraping failed!", "ASIN = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.asin + "</a>");
+		scrapeMessage(false, "Scraping failed!", provider.name + " ID = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.itemId + "</a>");
 	}
 
 	// Done!
@@ -776,20 +775,22 @@ function fetchCallback(info) {
 }
 
 /**
- *  Search for random Amazon products and display results in table.
+ *  Search for random products and call fetchCallback() upon result.
+ *  
+ *  @param provider		Provider to scrape.
  */
-function scrapeRandom() {
+function scrapeRandom(provider) {
 	// Disable interface elements.
 	enableInterface(false);
 	
 	// Generate random search string.
 	var str = randomStr(4);
-	progress(1, 2, "Searching for products matching '" + str + "'...")
-	search(str, function(results) {
+	progress(1, 2, "Searching for " + provider.name + " products matching '" + str + "'...")
+	provider.search(str, function(results) {
 		if (!results || !results.length) {
 			// No or invalid results.
 			console.log("failure", "Empty results");
-			scrapeMessage(false, "Scraping failed!", "Search string = " + str);
+			scrapeMessage(false, "Scraping failed!", provider.name + " search string = " + str);
 			
 			// Stop there.
 			enableInterface(true);
@@ -798,9 +799,9 @@ function scrapeRandom() {
 		
 		// Pick & fetch a random product in the first result page.
 		var index = Math.floor(Math.random()*results.length);
-		var asin = results[index].asin;
-		progress(2, 2, "Fetching product " + asin + "...")
-		fetch(asin, fetchCallback);
+		var itemId = results[index].itemId;
+		progress(2, 2, "Fetching " + provider.name + " product " + itemId + "...");
+		provider.fetch(itemId, function(info) {fetchCallback(provider, info);});
 	});
 }
 
@@ -808,6 +809,6 @@ function scrapeRandom() {
  *  Scrape random data from the currently selected provider.
  */
 function scrapeFields() {
-	// TODO depends on provider.
-	scrapeRandom();
+	var provider = providers[$("#autofill-provider").val()];
+	scrapeRandom(provider);
 }
