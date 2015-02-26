@@ -9,6 +9,9 @@
 providers["eBay"] = {
 	name: "eBay",
 	
+	/** Length of random string used to search for products. */
+	randomSearchStringLength: 4,
+	
 	/**
 	 * Search eBay products. Return item ID = listing IDs for first result page.
 	 *
@@ -24,7 +27,7 @@ providers["eBay"] = {
 				scrape: {
 					iterator: ".sresult",
 					data: {
-						itemId: {attr:"listingid"}
+						itemId: {attr: "listingid"}
 					}
 				}
 			},
@@ -58,9 +61,9 @@ providers["eBay"] = {
 							if ((e = $(this).find("span[itemprop='price']")).length) return e.text();
 							return undefined;
 						},
-						vendor: {sel:"#storeSeller a", attr:"title"},
-						features: {sel:".itemAttr", scrape: {iterator: "td.attrLabels", data: function() {return $(this).text() + " " + $(this).find("+td").text();}}},
-						description: {sel:"#desc_div", scrape: {iterator:"td:not(:has(table)) :not(style,script,noscript)", data:'text'}}, 
+						vendor: {sel: "#storeSeller a", attr: "title"},
+						features: {sel: ".itemAttr", scrape: {iterator: "td.attrLabels", data: function() {return $(this).text() + " " + $(this).find("+td").text();}}},
+						description: {sel: "#desc_div", scrape: {iterator: "td:not(:has(table)) :not(style,script,noscript)", data: 'text'}}, 
 					}
 				}
 			},

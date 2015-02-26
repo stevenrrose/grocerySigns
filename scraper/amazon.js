@@ -8,6 +8,9 @@
 
 providers["Amazon"] = {
 	name: "Amazon",
+
+	/** Length of random string used to search for products. */
+	randomSearchStringLength: 4,
 	
 	/**
 	 * Search Amazon products. Return item IDs = ASINs for first result page.
@@ -24,7 +27,7 @@ providers["Amazon"] = {
 				scrape: {
 					iterator: ".s-result-item",
 					data: {
-						itemId: {attr:"data-asin"}
+						itemId: {attr: "data-asin"}
 					}
 				}
 			},
@@ -50,10 +53,10 @@ providers["Amazon"] = {
 					params: {limit: 1},
 					iterator: "#handleBuy",
 					data: {
-						title: {sel:"#btAsinTitle"},
-						price: {sel:"#actualPriceValue,span.pa_price,span.priceLarge"},
-						vendor: {sel:"#brand,.brandLink > a,span:starts-with('by') a:first", method:'text'},
-						features: {sel:"#feature-bullets-atf", scrape: {iterator: "li", data:'text'}},
+						title: {sel: "#btAsinTitle"},
+						price: {sel: "#actualPriceValue,span.pa_price,span.priceLarge"},
+						vendor: {sel: "#brand,.brandLink > a,span:starts-with('by') a:first", method: 'text'},
+						features: {sel: "#feature-bullets-atf", scrape: {iterator: "li", data: 'text'}},
 						description: function() {return $(this).parent().find("#productDescription > .content").text().split(/[.!;]/);},
 					}
 				}

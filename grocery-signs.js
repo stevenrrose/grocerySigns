@@ -784,7 +784,7 @@ function scrapeRandom(provider) {
 	enableInterface(false);
 	
 	// Generate random search string.
-	var str = randomStr(4);
+	var str = randomStr(provider.randomSearchStringLength);
 	progress(1, 2, "Searching for " + provider.name + " products matching '" + str + "'...")
 	provider.search(str, function(results) {
 		if (!results || !results.length) {
