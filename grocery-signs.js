@@ -806,6 +806,22 @@ function scrapeRandom(provider) {
 }
 
 /**
+ * Scrape product given its item ID.
+ *  
+ *  @param provider		Provider to scrape.
+ *	@param itemId		Item ID of the product to scrape.
+ */
+function scrapeItem(provider, itemId) {
+	// Disable interface elements.
+	enableInterface(false);
+	
+	// Fetch given item.
+	itemId = itemId.trim();
+	progress(1, 1, "Fetching " + provider.name + " product " + itemId + "...");
+	provider.fetch(itemId, function(info) {fetchCallback(provider, info);});
+}
+
+/**
  *  Scrape random data from the currently selected provider.
  */
 function scrapeFields() {
