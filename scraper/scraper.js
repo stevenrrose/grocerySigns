@@ -8,19 +8,6 @@
 var fetchUrl = "fetch.php";
 
 /**
- * Pick & fetch a random product from a search result list.
- *
- *	@param results	Array of result objects (typically from search()).
- */
-function fetchRandomSearchResult(results, callback) {
-	console.log("results", results);
-	var index = Math.floor(Math.random()*results.length);
-	var asin = results[index].asin;
-	console.log("=> index", index, asin);
-	fetch(asin, callback);
-}
-
-/**
  * Generate a random string.
  *
  *	@param size		Size of string to generate.
@@ -33,18 +20,6 @@ function randomStr(size) {
 	}
 	return str;
 }
-
-/**
- * Search for random Amazon products.
- */
-function randomSearch() {
-	var str = randomStr(4);
-	search(str, function(results){fetchRandomSearchResult(results,function(data){console.log(data)})});
-} 
-
-// Test
-function go1() {fetch("B0081L8QGK");fetch("B00CEZEIAC");fetch("B005HWUD26");fetch("B008I3QX6Q")}
-function go2() {search("bzt", fetchRandomSearchResult);}
 
 
 /*
@@ -72,44 +47,42 @@ function progress(step, nbSteps, stepLabel) {
  *	@param enabled	Whether to enable or disable interface.
  */
 function enableInterface(enabled) {
-	$("#scrapeRandom").prop('disabled', !enabled);
-	$("#scrapeASIN").prop('disabled', !enabled);
 	$("#progressDialog").modal(enabled?'hide':'show');
 }
 
 /**
- * Amazon product callback: display result in table.
+ * Fetch product callback: display result in table.
  *
- *	@param info		Product info.
- *
- *	@see fetch()
+ *	@param provider		Product provider descriptor.
+ *	@param info			Product info.
  */
-function fetchCallback(info) {
+function fetchCallback(provider, info) {
 	console.log(info);		
 	if (info.success) {
 		// Success, display product data.
 		$("#results").find('tbody')
 			.append($('<tr>')
-				.append($('<td>').append($('<a target="_blank" href="' + info.url + '">').text(info.asin)))
+				.append($('<td>').text(provider.name))
+				.append($('<td>').append($('<a target="_blank" href="' + info.url + '">').text(info.itemId)))
 				.append($('<td>').text(info.price))
 				.append($('<td>').text(info.vendor))
 				.append($('<td>').text(info.title))
 			)
 			.append($('<tr>')
-				.append($('<td colspan="2">'))
-				.append($('<td colspan="2">').text(info.features))
+				.append($('<td>'))
+				.append($('<td colspan="4">').text(info.features))
 			)
 			.append($('<tr>')
-				.append($('<td colspan="2">'))
-				.append($('<td colspan="2">').text(info.description))
+				.append($('<td>'))
+				.append($('<td colspan="4">').text(info.description))
 			);
 	} else {
 		// Failure.
 		$("#results").find('tbody')
 			.append($('<tr class="danger">')
-				.append($('<td>').append($('<a target="_blank" href="' + info.url + '">').text(info.asin)))
-				.append($('<td>'))
-				.append($('<td>'))
+				.append($('<td>').text(provider.name))
+				.append($('<td>').append($('<a target="_blank" href="' + info.url + '">').text(info.itemId)))
+				.append($('<td colspan="2">'))
 				.append($('<td>').text("Failure"))
 			);
 	}
@@ -119,24 +92,25 @@ function fetchCallback(info) {
 }
 
 /**
- * Search for random Amazon products and display results in table.
+ * Search for random products and display results in table.
  */
 function scrapeRandom() {
+	var provider = providers[$("#provider").val()];
+
 	// Disable interface elements.
 	enableInterface(false);
 	
 	// Generate random search string.
 	var str = randomStr(4);
-	progress(1, 2, "Searching for products matching '" + str + "'...")
-	search(str, function(results) {
+	progress(1, 2, "Searching for " + provider.name + " products matching '" + str + "'...")
+	provider.search(str, function(results) {
 		if (!results || !results.length) {
 			// No or invalid results.
 			$("#results").find('tbody')
 				.append($('<tr class="danger">')
-					.append($('<td>'))
-					.append($('<td>'))
-					.append($('<td>'))
-					.append($('<td>').text("Empty results"))
+					.append($('<td>').text(provider.name))
+					.append($('<td colspan="3">'))
+					.append($('<td>').text("Empty results for search string '" + str + "'"))
 				);
 			
 			// Stop there.
@@ -146,23 +120,24 @@ function scrapeRandom() {
 		
 		// Pick & fetch a random product in the first result page.
 		var index = Math.floor(Math.random()*results.length);
-		var asin = results[index].asin;
-		progress(2, 2, "Fetching product " + asin + "...")
-		fetch(asin, fetchCallback);
+		var itemId = results[index].itemId;
+		progress(2, 2, "Fetching " + provider.name + " product " + itemId + "...");
+		provider.fetch(itemId, function(info) {fetchCallback(provider, info);});
 	});
 }
 
 /**
- * Scrape Amazon product given its ASIN.
- *
- *	@param asin		ASIN of the product to scrape.
+ * Scrape product given its item ID.
  */
-function scrapeASIN(asin) {
+function scrapeItem() {
+	var provider = providers[$("#provider").val()];
+	var itemId = $("#itemId").val();
+	
 	// Disable interface elements.
 	enableInterface(false);
 	
-	// Fetch given ASIN.
-	asin = asin.trim();
-	progress(1, 1, "Fetching product " + asin + "...")
-	fetch(asin, fetchCallback);
+	// Fetch given item.
+	itemId = itemId.trim();
+	progress(1, 1, "Fetching " + provider.name + " product " + itemId + "...");
+	provider.fetch(itemId, function(info) {fetchCallback(provider, info);});
 }
