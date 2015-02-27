@@ -64,7 +64,7 @@ providers["OkCupid"] = {
 						features: {sel: "#profile_details", scrape: {iterator: "dl", data: function() {
 							var val = $(this).find("dd").contents(":not(script)").text().trim();
 							if (val == "") val = $(this).find("dd").text();
-							if (val == "—") return undefined;
+							if (!val.match(/\w/)) return undefined;
 							return $(this).find("dt").text().trim() + ": " + val;
 						}}},
 						description: function() {
