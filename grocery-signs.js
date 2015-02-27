@@ -49,6 +49,15 @@ function randomStr(size) {
 }
 
 /**
+ *  Split string into sentences.
+ *  
+ *  @param text		String to split.
+ */
+function splitSentences(text) {
+	return text.replace(/([!?]|\.\.\.)\s+/g, "$1. ").split(/[.;]\s/);
+}
+
+/**
  * 	Randomize array element order in-place (using seeded random function).
  *
  * 	Uses Fisher-Yates shuffle algorithm.

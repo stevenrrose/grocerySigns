@@ -57,7 +57,13 @@ providers["Amazon"] = {
 						price: {sel: "#actualPriceValue,span.pa_price,span.priceLarge"},
 						vendor: {sel: "#brand,.brandLink > a,span:starts-with('by') a:first", method: 'text'},
 						features: {sel: "#feature-bullets-atf", scrape: {iterator: "li", data: 'text'}},
-						description: function() {return $(this).parent().find("#productDescription > .content").text().split(/[.!;]/);},
+						description: function() {
+							return splitSentences(
+								$(this).parent().find("#productDescription > .content").text()
+							).filter(function(e) {
+								return e.trim() != "";
+							});
+						},
 					}
 				}
 			},

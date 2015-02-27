@@ -1,33 +1,38 @@
 /*
  *
- * Etsy scraping functions.
+ * OkCupid scraping functions.
  *
  * Depends on variable *fetchUrl* containing the URL of the fetch proxy.
  *
  */
 
-providers["Etsy"] = {
-	name: "Etsy",
+providers["OkCupid"] = {
+	name: "OkCupid",
 	
-	/** Length of random string used to search for products. */
-	randomSearchStringLength: 3,
+	/** Length of random string used to search for profiles. */
+	randomSearchStringLength: 2,
 	
 	/**
-	 * Search Etsy products. Return item IDs = listing IDs for first result page.
+	 * Search OkCupid products. Return item ID = profile IDs for first result page.
 	 *
 	 *	@param what			Search string.
 	 *	@param callback		Function called with results.
 	 */
 	search: function(what, callback) {
 		console.log("search", what);
-		var url = "http://www.etsy.com/search?q=" + what;
+		var url = "http://www.google.com/search?q=site:www.okcupid.com/profile+" + what;
+		console.log(url);
 		artoo.ajaxSpider(
 			[{url: fetchUrl, data: {url: url}}],
 			{
 				scrape: {
-					iterator: ".listing",
+					iterator: "#ires div.s div.kv cite",
 					data: {
-						itemId: {attr: "data-palette-listing-id"}
+						itemId: function() {
+							var re = /\/profile\/([^/?]+)/.exec($(this).text());
+							if (!re) return undefined;
+							return re[1];
+						},
 					}
 				}
 			},
@@ -38,29 +43,34 @@ providers["Etsy"] = {
 	},
 
 	/**
-	 * Fetch & scrape given Etsy product.
+	 * Fetch & scrape given OkCupid profile.
 	 *
 	 *	@param itemId		Item ID of the product to scrape.
 	 *	@param callback		Function called with product info.
 	 */ 
 	fetch: function(itemId, callback) {
 		console.log("fetch", itemId);
-		var url = "http://www.etsy.com/listing/" + itemId;
+		var url = "http://www.okcupid.com/profile/" + itemId;
 		artoo.ajaxSpider(
 			[{url: fetchUrl, data: {url: url}}],
 			{
 				scrape: {
 					params: {limit: 1},
-					iterator: "#content",
+					iterator: "#main_content",
 					data: {
-						title: function() {return $(this).parent().find("meta[name='twitter:title']").attr("value");},
-						price: function() {return $(this).parent().find("meta[name='twitter:data1']").attr("value");},
-						vendor: {sel: "#seller .shop-name span[itemprop='title']", method: 'text'},
-						features: {sel: ".properties", scrape: {iterator: "li", data: 'text'}},
+						title: {sel: "#basic_info_sn"},
+						price: {sel: "#ajax_age"},
+						vendor: {sel: "#ajax_location"},
+						features: {sel: "#profile_details", scrape: {iterator: "dl", data: function() {
+							var val = $(this).find("dd").contents(":not(script)").text().trim();
+							if (val == "") val = $(this).find("dd").text();
+							if (val == "—") return undefined;
+							return $(this).find("dt").text().trim() + ": " + val;
+						}}},
 						description: function() {
 							return splitSentences(
 								$.makeArray(
-									$(this).find("#description-text").contents()
+									$(this).find("#main_column .text").contents()
 										.map(function() {
 											return $(this).text();
 										})

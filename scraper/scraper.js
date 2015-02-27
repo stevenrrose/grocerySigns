@@ -21,6 +21,15 @@ function randomStr(size) {
 	return str;
 }
 
+/**
+ *  Split string into sentences.
+ *  
+ *  @param text		String to split.
+ */
+function splitSentences(text) {
+	return text.replace(/([!?]|\.\.\.)\s+/g, "$1. ").split(/[.;]\s/);
+}
+
 
 /*
  *

@@ -13,7 +13,7 @@ providers["eBay"] = {
 	randomSearchStringLength: 4,
 	
 	/**
-	 * Search eBay products. Return item ID = listing IDs for first result page.
+	 * Search eBay products. Return item IDs = listing IDs for first result page.
 	 *
 	 *	@param what			Search string.
 	 *	@param callback		Function called with results.
