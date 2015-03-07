@@ -1,0 +1,44 @@
+/* Control panel is fixed on the left side. */
+.container {
+	position: fixed;
+	width: 350px
+}
+
+/* Output frame fills the remaining space. */
+#pages {
+	position: fixed;
+	left: 350px;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	overflow: auto;
+	padding: 10px;
+}
+
+/* Output pages with fixed aspect ratio trick: */
+/* - Generic page wrapper class: full-width element combined with ratio-specific class. */
+.page {
+	display: block;
+	position: relative;
+	width: 100%;
+	height: 0;
+}
+/* - For a given aspect ratio, set padding-bottom to height/width ratio. */
+.page-us {
+	padding-bottom: 129%;
+}
+.page-iso {
+	padding-bottom: 142%;
+}
+/* - Wrapped iframe fills the parent container. */
+.page iframe {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	left: 0; top: 0;
+}
+
+/* Add small space between page controls and PDF output. */
+.page-container .input-group  {
+	margin-bottom:4px;
+}
