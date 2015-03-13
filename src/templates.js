@@ -51,11 +51,6 @@
  *  							a regular expression, e.g. /[.,]/ for comma or point.
  *  - mainHeight				Height of main part, sign and decimal parts use the regular
  *  							box height.
- *  - mainShift [default 0]		Vertical shift in points for main part. This is to ensure
- *  							visually correct alignment of main text top with currency 
- *  							and decimal parts. Unfortunately the PDF library doesn't
- *  							provide the adequate font metrics so this has to be set 
- *  							manually.
  *  
  *  
  *  ## Font specifiers ##
@@ -105,7 +100,7 @@ var templates = {
 		fields : {
 			"FIELD01" : { left: 0,					 top: 77,  right: 612,  bottom: 307  },
 			"FIELD02" : { left: 0,					 top: 0,   right: 612,  bottom: 77,  inverted: true },
-			"FIELD03" : { left: 0,					 top: 384, right: 612,  bottom: 538, maxLength: 10, type: 'price', currency: "$", separator: /[.,]/, mainHeight: 408, mainShift: -55 },
+			"FIELD03" : { left: 0,					 top: 384, right: 612,  bottom: 538, maxLength: 10, type: 'price', currency: "$", separator: /[.,]/, mainHeight: 408 },
 			"FIELD04" : { left: 0,					 top: 307, right: 612,  bottom: 384, maxLength: 20 },
 			"FIELD05" : { left: "FIELD03.separator", top: 538, right: 612,  bottom: 634, maxLength: [5,30]},
 			"FIELD06" : { left: "FIELD03.separator", top: 634, right: 612,  bottom: 730  },
@@ -122,17 +117,17 @@ var templates = {
 		fields : {
 			"FIELD01" : { left: 0,					 top: "FIELD02.bottom", right: "width", bottom: 307  },
 			"FIELD02" : { left: 0,					 top: 0,	  			right: "width", bottom: 77,  inverted: true },
-			"FIELD03" : { left: 0,					 top: 384, 				right: "width", maxLength: 10, bottom: 538, type: 'price', currency: "$", separator: /[.,]/, mainHeight: 408, mainShift: -55 },
+			"FIELD03" : { left: 0,					 top: 384, 				right: "width", maxLength: 10, bottom: 538, type: 'price', currency: "$", separator: /[.,]/, mainHeight: 408 },
 			"FIELD04" : { left: 0,					 top: 307, 				right: "width", bottom: 384  },
 			"FIELD05" : { left: "FIELD03.separator", top: 538, 				right: "width", bottom: 634  },
 			"FIELD06" : { left: "FIELD03.separator", top: 634, 				right: "width", bottom: 730  },
 		}
 	},
-	"Helvetica (Letter)" : {
+	"ArialBlack (Letter)" : {
 		/* Letter */
 		width: 		612,
 		height: 	792,
-		font: 		"Helvetica",
+		font: 		ArialBlack,
 		maxRatio: 	2,
 		padX: 		10, 
 		padY: 		10,

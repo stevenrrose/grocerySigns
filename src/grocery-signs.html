@@ -17,6 +17,9 @@
 	<!-- Artoo -->
 	<script src="https://medialab.github.io/artoo/public/dist/artoo-0.3.0.min.js"></script>
     
+    <!-- OpenType.js -->
+    <script src="opentype.min.js"></script>
+	
     <!-- PDFKit -->
     <script src="pdfkit.js"></script>
     <script src="blob-stream.js"></script>
@@ -30,23 +33,8 @@
     <!-- FileSaver/saveAs for PDF download (https://github.com/eligrey/FileSaver.js) -->
     <script src="FileSaver.min.js"></script>
     
-    <!-- Fonts -->
-    <script>
-    function base64toUint8Array(b64) {
-        byteString = atob(b64);
-        var ab = new ArrayBuffer(byteString.length);
-        var ia = new Uint8Array(ab);
-        for (var i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-        }
-        return ab;
-    }
-    </script>
-    <script src="fonts/ArialBlack.js"></script>
-    <script src="fonts/Raiders.js"></script>
-    <script src="fonts/SansPosterBold.js"></script>
-
     <!-- Our stuff -->
+    <!-- 1. Scraper -->
 	<script>
 	var providers = {};
 	</script>
@@ -54,7 +42,12 @@
     <script src="scraper/ebay.js"></script>
     <script src="scraper/etsy.js"></script>
     <script src="scraper/okcupid.js"></script>
+	
+    <!-- 2. Fonts & templates -->
+    <script src="fonts.js"></script>
     <script src="templates.js"></script>
+	
+    <!-- 3. Main code -->
     <script src="grocery-signs.js"></script>
     
     <link rel="stylesheet" href="grocery-signs.css">

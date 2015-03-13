@@ -311,7 +311,8 @@ function generatePDF(template) {
 					padY = (field.padY || template.padY || 0);
 				doc.translate(padX, padY);
 
-				doc.font(field.font || template.font);
+				var font = field.font || template.font;
+				doc.font(typeof(font) === 'string' ? font : font.data);
 				var type = (field.type || 'text');
 				switch (type) {
 					case 'text': {
@@ -355,11 +356,12 @@ function generatePDF(template) {
 						var scaleX = (width - padX) / doc.widthOfString(currency+main+decimal);
 						
 						// Compute Y scaling of currency+decimal and main parts.
-						var scaleY     = (height     - padY*2) / doc.currentLineHeight(),
+						var scaleY     = (height           - padY*2) / doc.currentLineHeight(),
 							scaleYMain = (field.mainHeight - padY*2) / doc.currentLineHeight();
 							
 						// Output parts.
 						var x = 0;
+						
 						// - Currency.
 						doc.save();
 						doc.scale(scaleX, scaleY, {/*empty block needed*/});
@@ -367,15 +369,28 @@ function generatePDF(template) {
 						doc.restore();
 						x += doc.widthOfString(currency);
 						fieldCoords[id + ".currency"] = left + x*scaleX;
+						
 						// - Main.
 						doc.save();
-						var mainShift = (field.mainShift || 0);
-						doc.translate(0, mainShift);
+						if (font.opentype) {
+							// Shift main part upwards to align character tops.
+							// - Logical line height = ascender - descender.
+							var line = font.opentype.ascender - font.opentype.descender;
+							
+							// - Logical top position = yMax for glyph 'T' (could be any other glyph with top bar).
+							var top = font.opentype.ascender - font.opentype.charToGlyph('T').yMax;
+							
+							// - Actual top position for each part.
+							var yBase = top * (height           - padY*2) / line,
+								yMain = top * (field.mainHeight - padY*2) / line;
+							doc.translate(0, yBase-yMain);
+						}
 						doc.scale(scaleX, scaleYMain, {/*empty block needed*/});
 						doc.text(main, x, 0);
 						doc.restore();
 						x += doc.widthOfString(main);
 						fieldCoords[id + ".separator"] = left + x*scaleX;
+						
 						// - Decimal.
 						doc.scale(scaleX, scaleY, {/*empty block needed*/});
 						doc.text(decimal, x, 0);
