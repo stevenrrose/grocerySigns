@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Grocery Signs</title>
+
+    <!-- jQuery -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+    
+	<!-- Artoo -->
+	<script src="https://medialab.github.io/artoo/public/dist/artoo-0.3.0.min.js"></script>
+    
+    <!-- PDFKit -->
+    <script src="pdfkit.js"></script>
+    <script src="blob-stream.js"></script>
+
+	<!-- PDF.js -->
+	<script src="pdfjs/build/pdf.js"></script>
+	<script>
+	PDFJS.workerSrc = "pdfjs/build/pdf.worker.js";
+	</script>
+
+    <!-- FileSaver/saveAs for PDF download (https://github.com/eligrey/FileSaver.js) -->
+    <script src="FileSaver.min.js"></script>
+    
+    <!-- Fonts -->
+    <script>
+    function base64toUint8Array(b64) {
+        byteString = atob(b64);
+        var ab = new ArrayBuffer(byteString.length);
+        var ia = new Uint8Array(ab);
+        for (var i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        return ab;
+    }
+    </script>
+    <script src="fonts/ArialBlack.js"></script>
+    <script src="fonts/Raiders.js"></script>
+    <script src="fonts/SansPosterBold.js"></script>
+
+    <!-- Our stuff -->
+	<script>
+	var providers = {};
+	</script>
+    <script src="scraper/amazon.js"></script>
+    <script src="scraper/ebay.js"></script>
+    <script src="templates.js"></script>
+    <script src="grocery-signs.js"></script>
+    
+    <link rel="stylesheet" href="grocery-signs.css">
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>Grocery Signs</h1>
+        </div>
+        
+        <!-- Parameters -->
+        <div class="panel panel-default">
+            <div id="parameters" class="panel-heading">
+                <form class="form-horizontal" role="form">
+                    <!-- Layout -->
+                    <div id="layout" class="form-group">
+                        <label class="col-sm-3 control-label">Display</label>
+                        <div class="col-sm-9">
+							<div class="form-inline">
+								<select id="columns" class="form-control">
+									<option value="0" selected>Auto</option>
+									<option value="1">1</option>
+									<option value="2">2</option>
+									<option value="3">3</option>
+									<option value="4">4</option>
+									<option value="6">6</option>
+								</select>
+								&times;
+								<select id="rows" class="form-control">
+									<option value="1">1</option>
+									<option value="2">2</option>
+									<option value="3" selected>3</option>
+									<option value="4">4</option>
+									<option value="5">5</option>
+								</select>
+							</div>
+							<p class="help-block">Max columns/rows per page</p>
+                        </div>
+						<script>
+						$("#columns").change(buildPages);
+						$("#rows").change(buildPages);
+						</script>
+                    </div>
+
+                    <!-- Autofill -->
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label">Autofill</label>
+                        <div class="col-sm-9">
+							<div class="input-group">
+								<select id="autofill-provider" class="form-control"></select>
+								<script>
+								$.each(providers, function(key, value) {
+									$("#autofill-provider").append(new Option(value.name, key));
+								});
+								</script>
+								<span class="input-group-btn">
+									<button type="button" id="autofill" class="btn btn-default" onclick="scrapeFields()"><span class="glyphicon glyphicon-refresh"></span> Go!</button>
+								</span>
+							</div>								
+							<div class="checkbox"><label><input id="randomize" type="checkbox">Randomize fields</label></div>
+                        </div>
+						<script>
+						$("#randomize").change(function(){
+							populateFields();
+							refresh();
+						});
+						</script>
+                    </div>
+				</form>
+				<button id="fieldsCollapse" type="button" data-toggle="collapse" data-target="#fields" aria-expanded="false" aria-controls="fields">
+					<span class="caret"></span>
+					<span class="sr-only">Show/hide field panel</span>
+				</button>
+			</div>
+					
+			<!-- Template field container -->
+            <div id="fields" class="panel-body collapse in">
+                <form class="form-horizontal" role="form"></form>
+			</div>
+			<script>
+			// Generate fields.
+			var nbFields = 0;
+			$.each(templates, function(key, template) {
+				nbFields = Math.max(nbFields, Object.keys(template.fields).length);
+			});			
+			for (var i=1; i <= nbFields; i++) {
+				var id = fieldId(i);
+				$("#fields form").append(
+					  "<div class='form-group'>"
+					+ "<label for='" + id + "' class='col-sm-3 control-label'>" + id + "</label>"
+					+ "<div class='col-sm-9'><input class='FIELD form-control' id='" + id + "' /></div>"
+                    + "</div>"
+				);
+			}
+			$(".FIELD").change(scheduleRefresh).keyup(scheduleRefresh);
+			
+			// Toggle collapse button icon.
+			$("#fields")
+				.on('hide.bs.collapse', function () {$("#fieldsCollapse").addClass("dropup");})
+				.on('show.bs.collapse', function () {$("#fieldsCollapse").removeClass("dropup");})
+			</script>
+        </div>
+    </div>
+	
+    <!-- Container for pages -->
+	<div id="pages" class="container-fluid"></div>
+
+    <!-- Scraping progress modal dialog. -->
+    <div class="modal fade" id="progressDialog" tabindex="-1" role="dialog" aria-labelledby="scrapeLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="scrapeLabel">Scraping In Progress...</h4>
+                </div>
+                <div class="modal-body">
+                    <!-- Progress bar -->
+                    <div id="progress" class="progress progress-striped active">
+                      <div class="progress-bar" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="1" style="width: 0%">
+                        <span class="sr-only">0%</span>
+                      </div>
+                    </div>
+                    <!-- Progress texts -->
+                    <p id="progressStep"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+	
+	<script>
+	// Refresh interface.
+	buildPages();
+	</script>
+</body>
+</html>

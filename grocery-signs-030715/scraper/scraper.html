@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>E-Commerce Scraper</title>
+
+    <!-- jQuery -->
+	<!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>-->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
+	
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+    
+	<!-- Artoo -->
+	<script src="https://medialab.github.io/artoo/public/dist/artoo-0.3.1.min.js"></script>
+
+    <!-- Our stuff -->
+	<script>
+	var providers = {};
+	</script>
+    <script src="amazon.js"></script>
+    <script src="ebay.js"></script>
+    <script src="etsy.js"></script>
+    <script src="okcupid.js"></script>
+    <script src="scraper.js"></script>
+    
+    <link rel="stylesheet" href="scraper.css">
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>E-Commerce Scraper</h1>
+        </div>
+        
+        <div class="panel panel-default">
+            <!-- Scrape buttons -->
+            <div class="panel-heading">
+				<div class="form-inline">
+					<!-- Provider -->
+					<label for="provider">Provider:</label>
+					<select id="provider" class="form-control"></select>
+					<script>
+					$.each(providers, function(key, value) {
+						$("#provider").append(new Option(value.name, key));
+					});
+					</script>
+					
+					</script>
+					
+					<!-- Random -->
+					<button type="button" id="scrapeRandom" class="btn btn-primary" onclick="scrapeRandom()"><span class="glyphicon glyphicon-refresh"></span> Scrape random</button>
+					
+					<!-- Item ID -->
+					<div class="input-group">
+						<span class="input-group-btn">
+							<button id="scrapeItem" class="btn btn-default" onclick="scrapeItem()"><span class="glyphicon glyphicon-search"></span> Scrape Item:</button>
+						</span>
+						<input id="itemId" type="text" class="form-control" placeholder="Item ID" />
+					</div>
+					<script>
+					$("#itemId").keyup(function (e) {
+						if (e.keyCode == 13) {
+							$("#scrapeItem").click();
+						}
+					});
+					</script>
+				</div>
+            </div>
+			
+			<!-- Result table -->
+			<table id="results" class="table table-striped">
+				<thead>
+					<tr>
+						<th class="col-xs-1">Provider</th>
+						<th class="col-xs-1">Item ID</th>
+						<th class="col-xs-1">Price</th>
+						<th class="col-xs-2">Vendor</th>
+						<th>Title</th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
+        </div>        
+    </div>
+
+    <!-- Progress modal dialog. -->
+    <div class="modal fade" id="progressDialog" tabindex="-1" role="dialog" aria-labelledby="scrapeLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="scrapeLabel">Scraping In Progress...</h4>
+                </div>
+                <div class="modal-body">
+                    <!-- Progress bar -->
+                    <div id="progress" class="progress progress-striped active">
+                      <div class="progress-bar" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="1" style="width: 0%">
+                        <span class="sr-only">0%</span>
+                      </div>
+                    </div>
+                    <!-- Progress texts -->
+                    <p id="progressStep"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>
