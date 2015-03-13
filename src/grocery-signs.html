@@ -61,7 +61,7 @@
         <!-- Parameters -->
         <div class="panel panel-default">
             <div id="parameters" class="panel-heading">
-                <form class="form-horizontal" role="form">
+                <form class="form-horizontal" role="form" onsubmit="return false">
                     <!-- Layout -->
                     <div id="layout" class="form-group">
                         <label class="col-sm-3 control-label">Display</label>
@@ -87,8 +87,7 @@
 							<p class="help-block">Max columns/rows per page</p>
                         </div>
 						<script>
-						$("#columns").change(buildPages);
-						$("#rows").change(buildPages);
+						$("#columns, #rows").change(buildPages);
 						</script>
                     </div>
 
@@ -104,15 +103,32 @@
 								});
 								</script>
 								<span class="input-group-btn">
-									<button type="button" id="autofill" class="btn btn-default" onclick="scrapeFields()"><span class="glyphicon glyphicon-refresh"></span> Go!</button>
+									<button type="button" id="autofill" class="btn btn-primary" onclick="scrapeFields()"><span class="glyphicon glyphicon-arrow-right"></span> Go!</button>
 								</span>
 							</div>								
-							<div class="checkbox"><label><input id="randomize" type="checkbox">Randomize fields</label></div>
-                        </div>
+						</div>
+                    </div>
+
+                    <!-- Randomize -->
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" for="randomize">Shuffle</label>
+                        <div class="col-sm-9">
+							<div class="input-group">
+								<span class="input-group-addon"><input type="checkbox" id="randomize"></span>
+								<input type="number" class="form-control" id="seed" placeholder="Seed" min="0" max="999999" disabled>
+								<span class="input-group-btn">
+									<button type="button" id="genSeed" class="btn btn-default" disabled><span class="glyphicon glyphicon-refresh"></span></button>
+								</span>
+							</div>	
+						</div>
 						<script>
 						$("#randomize").change(function(){
-							populateFields();
-							refresh();
+							$("#seed, #genSeed").prop('disabled', !$("#randomize").prop('checked'));
+							$("#seed").change();
+						});
+						$("#seed").change(seedChanged).keyup(seedChanged);
+						$("#genSeed").click(function() {
+							$("#seed").val(generateRandomSeed()).change();
 						});
 						</script>
                     </div>
@@ -146,8 +162,8 @@
 			
 			// Toggle collapse button icon.
 			$("#fields")
-				.on('hide.bs.collapse', function () {$("#fieldsCollapse").addClass("dropup");})
-				.on('show.bs.collapse', function () {$("#fieldsCollapse").removeClass("dropup");})
+				.on('hide.bs.collapse', function() {$("#fieldsCollapse").addClass("dropup");})
+				.on('show.bs.collapse', function() {$("#fieldsCollapse").removeClass("dropup");})
 			</script>
         </div>
     </div>

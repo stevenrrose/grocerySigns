@@ -21,8 +21,16 @@ var lastScrapedId;
  *
  */
 
-/** Initialize random seed with current timestamp. */
-randomSeed = Date.now();
+ 
+/** 
+ *  Generate random seed.
+ */
+function generateRandomSeed() {
+	return Math.floor(Math.random() * 1000000);
+}
+
+var randomSeed = generateRandomSeed();
+
 
 /**
  *  Seeded random number generator as JS doesn't provide one by default.
@@ -786,6 +794,7 @@ function fetchCallback(provider, info) {
 		lastRandomSeed = randomSeed;
 		
 		// Display results.
+		$("#seed").val(randomSeed);
 		computeActualMaxFieldLengths();
 		populateFields();
 		refresh();
@@ -851,4 +860,13 @@ function scrapeItem(provider, itemId) {
 function scrapeFields() {
 	var provider = providers[$("#autofill-provider").val()];
 	scrapeRandom(provider);
+}
+
+/**
+ *  Called when random seed is changed by any means. Reshuffles fields & refresh pages.
+ */
+function seedChanged() {
+	lastRandomSeed = $("#seed").val();
+	populateFields();
+	refresh();
 }
