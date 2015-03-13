@@ -64,6 +64,7 @@ providers["eBay"] = {
 						vendor: {sel: "#storeSeller a", attr: "title"},
 						features: {sel: ".itemAttr", scrape: {iterator: "td.attrLabels", data: function() {return $(this).text() + " " + $(this).find("+td").text();}}},
 						description: {sel: "#desc_div", scrape: {iterator: "td:not(:has(table)) :not(style,script,noscript)", data: 'text'}}, 
+						image: {sel: "#icImg", attr: 'src'},
 					}
 				}
 			},

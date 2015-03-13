@@ -67,9 +67,10 @@ function enableInterface(enabled) {
  */
 function fetchCallback(provider, info) {
 	console.log(info);		
+	var body = $("#results").find('tbody');
 	if (info.success) {
 		// Success, display product data.
-		$("#results").find('tbody')
+		body
 			.append($('<tr>')
 				.append($('<td>').text(provider.name))
 				.append($('<td>').append($('<a target="_blank" href="' + info.url + '">').text(info.itemId)))
@@ -85,9 +86,15 @@ function fetchCallback(provider, info) {
 				.append($('<td>'))
 				.append($('<td colspan="4">').text(info.description))
 			);
+		if (info.image) {
+			body.append($('<tr>')
+				.append($('<td>'))
+				.append($('<td colspan="4">').append($('<img src="' + info.image + '">')))
+			);
+		}
 	} else {
 		// Failure.
-		$("#results").find('tbody')
+		body
 			.append($('<tr class="danger">')
 				.append($('<td>').text(provider.name))
 				.append($('<td>').append($('<a target="_blank" href="' + info.url + '">').text(info.itemId)))

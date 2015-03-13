@@ -20,7 +20,7 @@ providers["Etsy"] = {
 	 */
 	search: function(what, callback) {
 		console.log("search", what);
-		var url = "http://www.etsy.com/search?q=" + what;
+		var url = "https://www.etsy.com/search?q=" + what;
 		artoo.ajaxSpider(
 			[{url: fetchUrl, data: {url: url}}],
 			{
@@ -69,6 +69,7 @@ providers["Etsy"] = {
 								return e.trim() != "";
 							});
 						},
+						image: {sel: "#image-0 > img", attr: 'src'},
 					}
 				}
 			},

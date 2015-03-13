@@ -64,6 +64,7 @@ providers["Amazon"] = {
 								return e.trim() != "";
 							});
 						},
+						image: {sel: "#main-image", attr: 'src'},
 					}
 				}
 			},

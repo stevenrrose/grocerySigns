@@ -79,6 +79,7 @@ providers["OkCupid"] = {
 								return e.trim() != "";
 							});
 						},
+						image: {sel: "#thumb0 img", attr: 'src'},
 					}
 				}
 			},
