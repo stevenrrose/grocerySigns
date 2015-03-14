@@ -43,8 +43,9 @@
     <script src="scraper/etsy.js"></script>
     <script src="scraper/okcupid.js"></script>
 	
-    <!-- 2. Fonts & templates -->
+    <!-- 2. Fonts, images & templates -->
     <script src="FontFile.js"></script>
+    <script src="ImageFile.js"></script>
     <script src="templates.js"></script>
 	
     <!-- 3. Main code -->
@@ -145,20 +146,7 @@
 			</div>
 			<script>
 			// Generate fields.
-			var nbFields = 0;
-			$.each(templates, function(key, template) {
-				nbFields = Math.max(nbFields, Object.keys(template.fields).length);
-			});			
-			for (var i=1; i <= nbFields; i++) {
-				var id = fieldId(i);
-				$("#fields form").append(
-					  "<div class='form-group'>"
-					+ "<label for='" + id + "' class='col-sm-3 control-label'>" + id + "</label>"
-					+ "<div class='col-sm-9'><input class='FIELD form-control' id='" + id + "' /></div>"
-                    + "</div>"
-				);
-			}
-			$(".FIELD").change(scheduleRefresh).keyup(scheduleRefresh);
+			generateFieldInputs();
 			
 			// Toggle collapse button icon.
 			$("#fields")

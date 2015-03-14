@@ -11,16 +11,17 @@
  *  Each template is identified by its key name, the set of keys is used to fill the template 
  *  select inputs in the HTML UI. Template value is an object with the following properties:
  *  
- *  - width, height		Page size in points.
- *  - font				Font (see *Font specifiers*).
- *  - maxRatio			Maximum y/x scaling ratio used by the word wrapping algorithm. Beyond 
- *  					this value the characters are too narrow and the algorithm uses an
- *  					extra line.
- *  - padX, padY		Internal box padding in points.
- *  - fields			List of fields.
- *  - maxLength			Maximum character length of output strings. Value is either a single
- *  					integer or a [min, max] randomization interval. The actual value is
- *  					computed at each run.
+ *  - width, height				Page size in points.
+ *  - font						Font (see *Font specifiers*).
+ *  - maxRatio [default 2]		Maximum y/x scaling ratio used by the word wrapping algorithm. Beyond 
+ *  							this value the characters are too narrow and the algorithm uses an
+ *  							extra line.
+ *  - maxHRatio [default 4]		Maximum x/y scaling ratio for single lines.
+ *  - padX, padY [default 0]	Internal box padding in points.
+ *  - maxLength					Maximum character length of output strings. Value is either a single
+ *  							integer or a [min, max] randomization interval. The actual value is
+ *  							computed at each run.
+ *  - fields					List of fields.
  *  
  *  
  *  ## Field properties ##
@@ -32,11 +33,14 @@
  *  - inverted [default false]		If true, field is white text on black box.
  *  - type [default 'text'] 		Field type, must be either 'text' for regular fields or 
  *									'price' for price fields.
+ *	- inputId						ID of input field, useful when spanning text over several
+ *									boxes.
  *  
  *  Fields can also override the following template properties:
  *  
  *  - font
  *  - maxRatio
+ *  - maxHRatio
  *  - padX, padY
  *  - maxLength
  *  
@@ -47,6 +51,7 @@
  *  
  *  - align [default 'center']	Text align for multiline fields. Either 'left', 'right' or 
  *  							'center'.
+ *  - filter					Text filter function, takes and return string to display.
  *  
  *  
  *  ## Price field properties ##
@@ -95,16 +100,21 @@
 /** Global max length for text fields. */
 var globalMaxLength = 100;
 
+/** Load our fonts. */
+var Raiders = new FontFile("fonts/Raiders.ttf");
+var SansPosterBold = new FontFile("fonts/SansPosterBold.ttf");
+var ArialBlack = new FontFile("fonts/ArialBlack.ttf");
+
 var templates = {
 	"Raiders (Letter)" : {
 		/* Letter */
 		width: 		612,
 		height: 	792,
-		font: 		new FontFile("fonts/Raiders.ttf"),
+		font: 		Raiders,
 		maxRatio: 	2,
 		padX: 		10, 
 		padY: 		0,
-		fields : {
+		fields: {
 			"FIELD01" : { left: 0,					 top: 77,  right: 612,  bottom: 307  },
 			"FIELD02" : { left: 0,					 top: 0,   right: 612,  bottom: 77,  inverted: true },
 			"FIELD03" : { left: 0,					 top: 384, right: 612,  bottom: 538, maxLength: 10, type: 'price', currency: "$", separator: /[.,]/, mainHeight: 408 },
@@ -117,11 +127,11 @@ var templates = {
 		/* A4 */
 		width: 		595,
 		height: 	842,
-		font: 		new FontFile("fonts/SansPosterBold.ttf"),
+		font: 		SansPosterBold,
 		maxRatio: 	2,
 		padX: 		10, 
 		padY: 		0,
-		fields : {
+		fields: {
 			"FIELD01" : { left: 0,					 top: "FIELD02.bottom", right: "width", bottom: 307  },
 			"FIELD02" : { left: 0,					 top: 0,	  			right: "width", bottom: 77,  inverted: true },
 			"FIELD03" : { left: 0,					 top: 384, 				right: "width", maxLength: 10, bottom: 538, type: 'price', currency: "$", separator: /[.,]/, mainHeight: 408 },
@@ -134,17 +144,38 @@ var templates = {
 		/* Letter */
 		width: 		612,
 		height: 	792,
-		font: 		new FontFile("fonts/ArialBlack.ttf"),
+		font: 		ArialBlack,
 		maxRatio: 	2,
 		padX: 		10, 
-		padY: 		10,
-		fields : {
+		padY: 		5,
+		fields: {
 			"FIELD01" : { left: 0,					 top: 77,  right: 612,  bottom: 307  },
 			"FIELD02" : { left: 0,					 top: 0,   right: 612,  bottom: 77,  inverted: true },
 			"FIELD03" : { left: 0,					 top: 384, right: 612,  bottom: 538, maxLength: 10, type: 'price', currency: "$", separator: /[.,]/, mainHeight: 408 },
 			"FIELD04" : { left: 0,					 top: 307, right: 612,  bottom: 384, maxLength: 15 },
 			"FIELD05" : { left: "FIELD03.separator", top: 538, right: 612,  bottom: 634  },
 			"FIELD06" : { left: "FIELD03.separator", top: 634, right: 612,  bottom: 730  },
+		}
+	},
+	"Template 3" : {
+		/* Letter */
+		width: 		612,
+		height: 	792,
+		font: 		ArialBlack,
+		maxRatio: 	2,
+		maxHRatio: 	2,
+		padX: 		5, 
+		padY: 		0,
+		fields: {
+			"FIELD01.1" : { left: 70, 	top: 140, right: 550, bottom: 180, inputId: "FIELD01", align: 'left', filter: function(text) {return splitWords(text).slice(0, -1).join(" ");} },
+			"FIELD01.2" : { left: 70, 	top: 180, right: 550, bottom: 260, inputId: "FIELD01", align: 'left', filter: function(text) {return splitWords(text).slice(-1).join(" ");} },
+			"FIELD02"   : { left: 35, 	top: 55,  right: 560, bottom: 95,  inverted: true },
+			"FIELD03"   : { left: 50, 	top: 455, right: 215, bottom: 760 },
+			"FIELD04.1" : { left: 70, 	top: 270, right: 470, bottom: 310, inputId: "FIELD04", align: 'left', filter: function(text) {return splitWords(text).slice(0, -1).join(" ");} },
+			"FIELD04.2" : { left: 70, 	top: 310, right: 450, bottom: 390, inputId: "FIELD04", align: 'left', filter: function(text) {return splitWords(text).slice(-1).join(" ");} },
+			"FIELD05"   : { left: 376, 	top: 455, right: 535, bottom: 760 },
+			"FIELD06"   : { left: 470, 	top: 350, right: 540, bottom: 405, angle: 15 },
+			"FIELD07"   : { left: 35, 	top: 100, right: 560, bottom: 135 },
 		}
 	},
 };

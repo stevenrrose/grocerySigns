@@ -66,6 +66,15 @@ function splitSentences(text) {
 }
 
 /**
+ *  Split string into words.
+ *  
+ *  @param text		String to split.
+ */
+function splitWords(text) {
+	return text.split(/\s+/);
+}
+
+/**
  * 	Randomize array element order in-place (using seeded random function).
  *
  * 	Uses Fisher-Yates shuffle algorithm.
@@ -269,34 +278,36 @@ function generatePDF(template) {
 			if (doneFields[id]) return;
 			
 			var fieldOptions = $.extend({
+					inputId: id,
 					type: 'text', 
 					padX: 0, padY: 0, 
 					actualMaxLength: globalMaxLength, 
 					maxRatio: 2,
+					maxHRatio: 4,
 					align: 'center',
 					currency: "$",
 					separator: ".",
 				}, template, field);
 		
 			// Get or retrieve box coordinates.
-			var left   = (typeof(field.left)   == 'number') ? field.left   : fieldCoords[field.left],
-				right  = (typeof(field.right)  == 'number') ? field.right  : fieldCoords[field.right],
-				top    = (typeof(field.top)    == 'number') ? field.top    : fieldCoords[field.top],
-				bottom = (typeof(field.bottom) == 'number') ? field.bottom : fieldCoords[field.bottom];
+			var left   = (typeof(field.left)   === 'number') ? field.left   : fieldCoords[field.left],
+				right  = (typeof(field.right)  === 'number') ? field.right  : fieldCoords[field.right],
+				top    = (typeof(field.top)    === 'number') ? field.top    : fieldCoords[field.top],
+				bottom = (typeof(field.bottom) === 'number') ? field.bottom : fieldCoords[field.bottom];
 				
 			// Remember coordinates that we know at this stage.
-			if (typeof(left)   == 'number') fieldCoords[id + ".left"]   = left;
-			if (typeof(right)  == 'number') fieldCoords[id + ".right"]  = right;
-			if (typeof(top)    == 'number') fieldCoords[id + ".top"]    = top;
-			if (typeof(bottom) == 'number') fieldCoords[id + ".bottom"] = bottom;
+			if (typeof(left)   === 'number') fieldCoords[id + ".left"]   = left;
+			if (typeof(right)  === 'number') fieldCoords[id + ".right"]  = right;
+			if (typeof(top)    === 'number') fieldCoords[id + ".top"]    = top;
+			if (typeof(bottom) === 'number') fieldCoords[id + ".bottom"] = bottom;
 			
-			if (typeof(left) == 'number' && typeof(right)  == 'number') fieldCoords[id + ".width"]  = right  - left;
-			if (typeof(top)  == 'number' && typeof(bottom) == 'number') fieldCoords[id + ".height"] = bottom - top;
+			if (typeof(left) === 'number' && typeof(right)  === 'number') fieldCoords[id + ".width"]  = right  - left;
+			if (typeof(top)  === 'number' && typeof(bottom) === 'number') fieldCoords[id + ".height"] = bottom - top;
 			
-			if (   typeof(left)   != 'number'
-				|| typeof(right)  != 'number'
-				|| typeof(top)    != 'number'
-				|| typeof(bottom) != 'number') {
+			if (   typeof(left)   !== 'number'
+				|| typeof(right)  !== 'number'
+				|| typeof(top)    !== 'number'
+				|| typeof(bottom) !== 'number') {
 				// We're still missing some info, try next loop iteration.
 				return;
 			}
@@ -323,7 +334,8 @@ function generatePDF(template) {
 			}
 	 
 			// Get & normalize field value.
-			var text = normalizeString($("#"+id).val());
+			var text = normalizeString($("#" + fieldOptions.inputId).val());
+			if (fieldOptions.filter) text = fieldOptions.filter(text);
 			maxLength = fieldOptions.actualMaxLength;
 			if (maxLength) text = text.substring(0, maxLength);
 			if (text.length > 0) {
@@ -331,6 +343,7 @@ function generatePDF(template) {
 				var padX = fieldOptions.padX,
 					padY = fieldOptions.padY;
 				doc.translate(padX, padY);
+				if (fieldOptions.angle) doc.rotate(fieldOptions.angle);
 
 				var font = fieldOptions.font;
 				doc.font(typeof(font) === 'string' ? font : font.data);
@@ -342,23 +355,42 @@ function generatePDF(template) {
 							height:   height - padY*2,
 							maxRatio: fieldOptions.maxRatio,
 						};
-						var fit = wrapText(doc, text.split(" "), 1, options);
+						var fit = wrapText(doc, splitWords(text), 1, options);
 						
-						// Output wrapped text line by line.
-						var scaleX = options.width  / fit.width,
-							scaleY = options.height / (doc.currentLineHeight() * fit.lines.length);
-						doc.scale(scaleX, scaleY, {/*empty block needed*/});
-						var y = 0;
-						for (var i = 0; i < fit.lines.length; i++) {
-							var lineWidth = doc.widthOfString(fit.lines[i]);
+						if (fit.lines.length > 1) {
+							// Output wrapped text line by line.
+							var scaleX = options.width  / fit.width,
+								scaleY = options.height / (doc.currentLineHeight() * fit.lines.length);
+							doc.scale(scaleX, scaleY, {/*empty block needed*/});
+							var y = 0;
+							for (var i = 0; i < fit.lines.length; i++) {
+								var lineWidth = doc.widthOfString(fit.lines[i]);
+								var x;
+								switch (fieldOptions.align) {
+									case 'left':  	x = 0; 				   			break;
+									case 'right': 	x = (fit.width - lineWidth); 	break;
+									default: 		x = (fit.width - lineWidth)/2; 	break;
+								}
+								doc.text(fit.lines[i], x, y);
+								y += doc.currentLineHeight();
+							}
+						} else {
+							// Single line: limit ratio in horizontal direction as well.
+							var lineWidth = doc.widthOfString(fit.lines[0]);
+							var scaleX = options.width  / lineWidth;
+								scaleY = options.height / doc.currentLineHeight();
+							if (scaleX > scaleY * fieldOptions.maxHRatio) {
+								scaleX = scaleY * fieldOptions.maxHRatio;
+							}
 							var x;
 							switch (fieldOptions.align) {
 								case 'left':  	x = 0; 				   			break;
-								case 'right': 	x = (fit.width - lineWidth); 	break;
-								default: 		x = (fit.width - lineWidth)/2; 	break;
+								case 'right': 	x = (options.width - lineWidth * scaleX); 	break;
+								default: 		x = (options.width - lineWidth * scaleX)/2; 	break;
 							}
-							doc.text(fit.lines[i], x, y);
-							y += doc.currentLineHeight();
+							doc.translate(x, 0);
+							doc.scale(scaleX, scaleY, {/*empty block needed*/});
+							doc.text(fit.lines[0], 0, 0);
 						}
 						break;
 					}
@@ -500,14 +532,28 @@ var scrapedSentences = [];
 var lastRandomSeed = randomSeed;
 
 /**
- *  Get the CSS id of the given field.
- *  
- *  @param index 	Field index.
- *  
- *  @return CSS id.
+ *  Generate field inputs from template specs.
  */
-function fieldId(index) {
-	return ("FIELD" + ((index < 10) ? ("0" + index) : index));
+function generateFieldInputs() {
+	// Merge all templates field names.
+	var fieldNames = {};
+	$.each(templates, function(key, template) {
+		$.each(template.fields, function(id, field) {
+			if (field.inputId) id = field.inputId;
+			fieldNames[id] = 1;
+		});
+	});	
+
+	// Generate inputs.
+	$.each(fieldNames, function(id) {
+		$("#fields form").append($('<div class="form-group" />')
+			.append($('<label for="' + id + '" class="col-sm-3 control-label" />').text(id))
+			.append($('<div class="col-sm-9" />')
+				.append('<input class="FIELD form-control" id="' + id + '" />')
+			)
+		);
+	});
+	$(".FIELD").change(scheduleRefresh).keyup(scheduleRefresh);
 }
 
 /**
@@ -768,10 +814,9 @@ function populateFields() {
 	}
 
 	// Populate fields with resulting values.
-	for (var i = 0; i < values.length && i < nbFields; i++) {
-		var id = "#" + fieldId(i+1);
-		$(id).val(values[i]);
-	}
+	$(".FIELD").each(function(i, e) {
+		$(e).val(values[i]);
+	});
 }
 
 /**
