@@ -205,17 +205,20 @@ function computeActualMaxFieldLengths() {
 			}
 		}
 	}
-	$.each(templates, function(key, val) {
+	$.each(templates, function(key, template) {
 		// Template-level option.
-		val.actualMaxLength = actualValue(val.maxLength);
+		template.actualMaxLength = actualValue(template.maxLength);
 		
 		// Field-level options.
-		$.each(val.fields, function(fkey, fval) {
-			fval.actualMaxLength = actualValue(fval.maxLength);
+		$.each(template.fields, function(fkey, field) {
+			field.actualMaxLength = actualValue(field.maxLength);
 		});
 	});
 }
  
+// Call at least once at startup.
+computeActualMaxFieldLengths();
+
 
 /*
  *
@@ -265,6 +268,16 @@ function generatePDF(template) {
 		$.each(template.fields, function(id, field) {
 			if (doneFields[id]) return;
 			
+			var fieldOptions = $.extend({
+					type: 'text', 
+					padX: 0, padY: 0, 
+					actualMaxLength: globalMaxLength, 
+					maxRatio: 2,
+					align: 'center',
+					currency: "$",
+					separator: ".",
+				}, template, field);
+		
 			// Get or retrieve box coordinates.
 			var left   = (typeof(field.left)   == 'number') ? field.left   : fieldCoords[field.left],
 				right  = (typeof(field.right)  == 'number') ? field.right  : fieldCoords[field.right],
@@ -311,24 +324,23 @@ function generatePDF(template) {
 	 
 			// Get & normalize field value.
 			var text = normalizeString($("#"+id).val());
-			maxLength = field.actualMaxLength || template.actualMaxLength || globalMaxLength;
+			maxLength = fieldOptions.actualMaxLength;
 			if (maxLength) text = text.substring(0, maxLength);
 			if (text.length > 0) {
 				// Text origin.
-				var padX = (field.padX || template.padX || 0),
-					padY = (field.padY || template.padY || 0);
+				var padX = fieldOptions.padX,
+					padY = fieldOptions.padY;
 				doc.translate(padX, padY);
 
-				var font = field.font || template.font;
+				var font = fieldOptions.font;
 				doc.font(typeof(font) === 'string' ? font : font.data);
-				var type = (field.type || 'text');
-				switch (type) {
+				switch (fieldOptions.type) {
 					case 'text': {
 						// Regular text field: use harmonious word wrapping.
 						var options = {
 							width:    width  - padX*2,
 							height:   height - padY*2,
-							maxRatio: (field.maxRatio || template.maxRatio || 2)
+							maxRatio: fieldOptions.maxRatio,
 						};
 						var fit = wrapText(doc, text.split(" "), 1, options);
 						
@@ -337,14 +349,13 @@ function generatePDF(template) {
 							scaleY = options.height / (doc.currentLineHeight() * fit.lines.length);
 						doc.scale(scaleX, scaleY, {/*empty block needed*/});
 						var y = 0;
-						var align = (field.align || 'center');
 						for (var i = 0; i < fit.lines.length; i++) {
 							var lineWidth = doc.widthOfString(fit.lines[i]);
 							var x;
-							switch (align) {
+							switch (fieldOptions.align) {
 								case 'left':  	x = 0; 				   			break;
-								case 'right': 	x = fit.width-lineWidth; 		break;
-								default: 		x = (fit.width-lineWidth)/2; 	break;
+								case 'right': 	x = (fit.width - lineWidth); 	break;
+								default: 		x = (fit.width - lineWidth)/2; 	break;
 							}
 							doc.text(fit.lines[i], x, y);
 							y += doc.currentLineHeight();
@@ -359,8 +370,8 @@ function generatePDF(template) {
 						// All 3 parts use the same X scaling (i.e. the char widths
 						// are the same), but the main part is taller and so uses
 						// a greater Y factor.
-						var currency = (field.currency || "$");
-						var separator = (field.separator || ".");
+						var currency = fieldOptions.currency;
+						var separator = fieldOptions.separator;
 						var parts = text.split(currency);
 						parts = parts[parts.length-1].split(separator);
 						var main = parts[0];
@@ -370,8 +381,8 @@ function generatePDF(template) {
 						var scaleX = (width - padX) / doc.widthOfString(currency+main+decimal);
 						
 						// Compute Y scaling of currency+decimal and main parts.
-						var scaleY     = (height           - padY*2) / doc.currentLineHeight(),
-							scaleYMain = (field.mainHeight - padY*2) / doc.currentLineHeight();
+						var scaleY     = (height                  - padY*2) / doc.currentLineHeight(),
+							scaleYMain = (fieldOptions.mainHeight - padY*2) / doc.currentLineHeight();
 							
 						// Output parts.
 						var x = 0;
@@ -395,8 +406,8 @@ function generatePDF(template) {
 							var top = font.opentype.ascender - font.opentype.charToGlyph('T').yMax;
 							
 							// - Actual top position for each part.
-							var yBase = top * (height           - padY*2) / line,
-								yMain = top * (field.mainHeight - padY*2) / line;
+							var yBase = top * (height                  - padY*2) / line,
+								yMain = top * (fieldOptions.mainHeight - padY*2) / line;
 							doc.translate(0, yBase-yMain);
 						}
 						doc.scale(scaleX, scaleYMain, {/*empty block needed*/});
@@ -619,7 +630,7 @@ function getFileName(index) {
 	var provider = $("#autofill-provider option:selected").text();
 	var filename = provider + "-" + lastScrapedId + "-" + templateName;
 	if ($("#randomize").prop('checked')) {
-		filename += "-" + lastRandomSeed;
+		filename += "-" + $("#seed").val();
 	}
 	return filename + ".pdf";
 }
@@ -796,14 +807,8 @@ function fetchCallback(provider, info) {
 			if (v != "") scrapedSentences.push(v);
 		});
 		
-		// Remember current random seed for deterministic randomization.
-		lastRandomSeed = randomSeed;
-		
-		// Display results.
-		$("#seed").val(randomSeed);
-		computeActualMaxFieldLengths();
-		populateFields();
-		refresh();
+		// Trigger display with a new random speed.
+		$("#seed").val(generateRandomSeed()).change();
 	} else {
 		// Failure.
 		scrapeMessage(false, "Scraping failed!", provider.name + " ID = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.itemId + "</a>");
@@ -873,6 +878,7 @@ function scrapeFields() {
  */
 function seedChanged() {
 	lastRandomSeed = $("#seed").val();
+	computeActualMaxFieldLengths();
 	populateFields();
 	refresh();
 }
