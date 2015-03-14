@@ -41,10 +41,17 @@
  *  - maxLength
  *  
  *  
+ *  ## Text field properties ##
+ *  
+ *  In addition to the regular field properties, text fields define the following properties:
+ *  
+ *  - align [default 'center']	Text align for multiline fields. Either 'left', 'right' or 
+ *  							'center'.
+ *  
+ *  
  *  ## Price field properties ##
  *  
- *  In addition to the regular text field properties, price fields define the following 
- *  properties:
+ *  In addition to the regular field properties, price fields define the following properties:
  *  
  *  - currency [default "$"]	Currency sign.
  *  - separator [default "."]	Main/decimal separator sign. May be a single char string or

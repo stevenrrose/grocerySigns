@@ -337,10 +337,16 @@ function generatePDF(template) {
 							scaleY = options.height / (doc.currentLineHeight() * fit.lines.length);
 						doc.scale(scaleX, scaleY, {/*empty block needed*/});
 						var y = 0;
+						var align = (field.align || 'center');
 						for (var i = 0; i < fit.lines.length; i++) {
-							// Centered on line
 							var lineWidth = doc.widthOfString(fit.lines[i]);
-							doc.text(fit.lines[i], (fit.width-lineWidth)/2, y);
+							var x;
+							switch (align) {
+								case 'left':  	x = 0; 				   			break;
+								case 'right': 	x = fit.width-lineWidth; 		break;
+								default: 		x = (fit.width-lineWidth)/2; 	break;
+							}
+							doc.text(fit.lines[i], x, y);
 							y += doc.currentLineHeight();
 						}
 						break;
