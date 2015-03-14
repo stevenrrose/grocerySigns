@@ -93,7 +93,7 @@ var templates = {
 		/* Letter */
 		width: 		612,
 		height: 	792,
-		font: 		Raiders,
+		font: 		new FontFile("fonts/Raiders.ttf"),
 		maxRatio: 	2,
 		padX: 		10, 
 		padY: 		0,
@@ -110,7 +110,7 @@ var templates = {
 		/* A4 */
 		width: 		595,
 		height: 	842,
-		font: 		SansPosterBold,
+		font: 		new FontFile("fonts/SansPosterBold.ttf"),
 		maxRatio: 	2,
 		padX: 		10, 
 		padY: 		0,
@@ -127,7 +127,7 @@ var templates = {
 		/* Letter */
 		width: 		612,
 		height: 	792,
-		font: 		ArialBlack,
+		font: 		new FontFile("fonts/ArialBlack.ttf"),
 		maxRatio: 	2,
 		padX: 		10, 
 		padY: 		10,
