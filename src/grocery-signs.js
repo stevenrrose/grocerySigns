@@ -189,8 +189,10 @@ function wrapText(doc, words, nbLines, options) {
         // Ratio is acceptable or we can't add lines anymore.
         return fit;
     } else {
-        // Add a line.
-        return wrapText(doc, words, nbLines+1, options);
+        // Add lines. Optimize the number of calls by estimating the needed number of 
+		// extra lines from the square root of the scaleY / (maxRatio * scaleX) ratio.
+		var incr = Math.floor(Math.sqrt(scaleY/(options.maxRatio*scaleX)));
+        return wrapText(doc, words, Math.min(words.length, nbLines+incr), options);
     }
 }
 
@@ -882,6 +884,9 @@ function fetchCallback(provider, info) {
 		$.each(info.images, function(i, v) {
 			scrapedImages[i] = new ImageFile(fetchUrl + "?url=" + encodeURIComponent(v), scheduleRefresh);
 		});
+		
+		// Enable randomize button. It is disabled by default for manual input mode.
+		$("#randomize").prop('disabled', false);
 		
 		// Trigger display with a new random speed.
 		$("#seed").val(generateRandomSeed()).change();
