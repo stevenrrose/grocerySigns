@@ -11,21 +11,22 @@
 /**
  * 	ImageFile constructor.
  *
- *	@param url		URL of image file. Must be on same domain.
+ *	@param url			URL of image file. Must be on same domain.
+ *	@param onload		Called when data loaded.
  */
-function ImageFile(url) {
+function ImageFile(url, onload) {
 	this.url = url;
 	this.type = undefined;
 	this.data = undefined;
 	
 	// Load image data.
-	this._load();
+	this._load(onload);
 }
 
 /**
  *  Load image data using AJAX.
  */
-ImageFile.prototype._load = function() {	
+ImageFile.prototype._load = function(onload) {	
     var request = new XMLHttpRequest();
     request.open('get', this.url, true);
     request.responseType = 'arraybuffer';
@@ -46,6 +47,8 @@ ImageFile.prototype._load = function() {
 			+ image.type 
 			+ ";base64,"
 			+ btoa(String.fromCharCode.apply(null, new Uint8Array(request.response)));
+			
+		if (onload) onload(image);
     };
     request.send();
 }

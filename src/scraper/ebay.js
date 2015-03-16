@@ -70,6 +70,7 @@ providers["eBay"] = {
 			},
 			function(data) {
 				var info = data[0][0];
+				if (info && info.image) info.images = [info.image];
 				callback($.extend({success: info ? true : false, itemId: itemId, url: url}, info));
 			}
 		);

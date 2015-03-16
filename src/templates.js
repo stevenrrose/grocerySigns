@@ -157,6 +157,47 @@ var templates = {
 			"FIELD06" : { left: "FIELD03.separator", top: 634, right: 612,  bottom: 730  },
 		}
 	},
+	"Template 1" : {
+		/* Letter */
+		width: 		612,
+		height: 	792,
+		font: 		ArialBlack,
+		maxRatio: 	2,
+		maxHRatio: 	2,
+		padX: 		5, 
+		padY: 		0,
+		fields: {
+			"FIELD01" :	{ left: 120, 					top: 150, 				right: 520, 				bottom: 270 },
+			"FIELD02" : { left: 35, 					top: 55,  				right: 560, 				bottom: 95, 	inverted: true },
+			"FIELD03" : { left: 35,						top: 420, 				right: 540, 				bottom: 590, 	type: 'price', currency: "$", separator: /[.,]/, mainHeight: 372 },
+			"FIELD04" : { left: 45, 					top: 280, 				right: 450, 				bottom: 390 },
+			"FIELD05" : { left: "FIELD03.left",			top: "FIELD03.bottom", 	right: "FIELD03.currency",  bottom: 730 },
+			"FIELD06" : { left: "FIELD03.separator", 	top: "FIELD03.bottom", 	right: "FIELD03.right",  	bottom: 730 },
+			"FIELD07" : { left: 60, 					top: 90,  				right: 550, 				bottom: 140 },
+			"FIELD08" : { left: 460, 					top: 290, 				right: 560, 				bottom: 390 },
+		}
+	},
+	"Template 2" : {
+		/* Letter */
+		width: 		612,
+		height: 	792,
+		font: 		ArialBlack,
+		maxRatio: 	2,
+		maxHRatio: 	2,
+		padX: 		5, 
+		padY: 		0,
+		fields: {
+			"FIELD01" :	{ left: 140, 			top: 160, 				right: 545, 				bottom: 280 },
+			"FIELD02" : { left: 35, 			top: 55,  				right: 560, 				bottom: 95, 	inverted: true },
+			"FIELD03" : { left: 15,				top: 410, 				right: 550, 				bottom: 590, 	type: 'price', currency: "$", separator: /[.,]/, mainHeight: 330 },
+			"FIELD04" : { left: 140, 			top: 300, 				right: 520, 				bottom: 410 },
+			"FIELD05" : { left: 430, 			top: 610, 				right: 550,  				bottom: 690,	type: 'image' },
+			"FIELD06" : { left: "FIELD03.left",	top: "FIELD03.bottom", 	right: "FIELD03.currency",  bottom: 680 },
+			"FIELD07" : { left: 60, 			top: 90,  				right: 550, 				bottom: 140 },
+			"FIELD08" : { left: 20, 			top: 720, 				right: 550, 				bottom: 760 },
+			"FIELD09" : { left: 30, 			top: 250, 				right: 110, 				bottom: 330,	type: 'image' },
+		}
+	},
 	"Template 3" : {
 		/* Letter */
 		width: 		612,

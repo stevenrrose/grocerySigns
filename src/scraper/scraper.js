@@ -86,10 +86,10 @@ function fetchCallback(provider, info) {
 				.append($('<td>'))
 				.append($('<td colspan="4">').text(info.description))
 			);
-		if (info.image) {
+		if (info.images && info.images.length > 0) {
 			body.append($('<tr>')
 				.append($('<td>'))
-				.append($('<td colspan="4">').append($('<img src="' + info.image + '">')))
+				.append($('<td colspan="4">').append($('<img src="' + info.images[0] + '">')))
 			);
 		}
 	} else {

@@ -79,7 +79,7 @@ providers["OkCupid"] = {
 								return e.trim() != "";
 							});
 						},
-						image: {sel: "#thumb0 img", attr: 'src'},
+						images: {sel: "#profile_thumbs", scrape: {iterator: "img", data: 'src'}},
 					}
 				}
 			},

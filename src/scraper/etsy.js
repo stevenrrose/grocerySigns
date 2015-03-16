@@ -69,7 +69,7 @@ providers["Etsy"] = {
 								return e.trim() != "";
 							});
 						},
-						image: {sel: "#image-0 > img", attr: 'src'},
+						images: {sel: "#image-carousel", scrape: {iterator: "li", data: 'data-large-image-href'}},
 					}
 				}
 			},

@@ -270,6 +270,9 @@ function generatePDF(template) {
 		"height" : template.height
 	};
 	
+	// Image index. Each image field consumes images in order.
+	var imageIndex = 0;
+	
 	while (Object.keys(doneFields).length < Object.keys(template.fields).length)
 	{
 		var progress = false;
@@ -340,127 +343,139 @@ function generatePDF(template) {
 				// Background image.
 				doc.image(field.background.data, 0, 0, {width: width, height: height});
 			}
-	 
-			// Get & normalize field value.
-			var text = normalizeString($("#" + fieldOptions.inputId).val());
-			if (fieldOptions.filter) text = fieldOptions.filter(text);
-			maxLength = fieldOptions.actualMaxLength;
-			if (maxLength) text = text.substring(0, maxLength);
-			if (text.length > 0) {
-				// Text origin.
-				var padX = fieldOptions.padX,
-					padY = fieldOptions.padY;
-				doc.translate(padX, padY);
+			
+			if (fieldOptions.type == 'image') {
+				// Output next scraped image.
+				if (imageIndex <= scrapedImages.length && scrapedImages[imageIndex] && scrapedImages[imageIndex].data) {
+					try {
+						doc.image(scrapedImages[imageIndex].data, 0, 0, {fit: [width, height], align: 'center', valign: 'center'});
+					} catch (e) {
+						console.log("PDFKit exception with image", scrapedImages[imageIndex], e);
+					}
+					imageIndex++;
+				}
+			} else {
+				// Get & normalize field value.
+				var text = normalizeString($("#" + fieldOptions.inputId).val());
+				if (fieldOptions.filter) text = fieldOptions.filter(text);
+				maxLength = fieldOptions.actualMaxLength;
+				if (maxLength) text = text.substring(0, maxLength);
+				if (text.length > 0) {
+					// Text origin.
+					var padX = fieldOptions.padX,
+						padY = fieldOptions.padY;
+					doc.translate(padX, padY);
 
-				var font = fieldOptions.font;
-				doc.font(typeof(font) === 'string' ? font : font.data);
-				switch (fieldOptions.type) {
-					case 'text': {
-						// Regular text field: use harmonious word wrapping.
-						var options = {
-							width:    width  - padX*2,
-							height:   height - padY*2,
-							maxRatio: fieldOptions.maxRatio,
-						};
-						var fit = wrapText(doc, splitWords(text), 1, options);
-						
-						if (fit.lines.length > 1) {
-							// Output wrapped text line by line.
-							var scaleX = options.width  / fit.width,
-								scaleY = options.height / (doc.currentLineHeight() * fit.lines.length);
-							doc.scale(scaleX, scaleY, {/*empty block needed*/});
-							var y = 0;
-							for (var i = 0; i < fit.lines.length; i++) {
-								var lineWidth = doc.widthOfString(fit.lines[i]);
+					var font = fieldOptions.font;
+					doc.font(typeof(font) === 'string' ? font : font.data);
+					switch (fieldOptions.type) {
+						case 'text': {
+							// Regular text field: use harmonious word wrapping.
+							var options = {
+								width:    width  - padX*2,
+								height:   height - padY*2,
+								maxRatio: fieldOptions.maxRatio,
+							};
+							var fit = wrapText(doc, splitWords(text), 1, options);
+							
+							if (fit.lines.length > 1) {
+								// Output wrapped text line by line.
+								var scaleX = options.width  / fit.width,
+									scaleY = options.height / (doc.currentLineHeight() * fit.lines.length);
+								doc.scale(scaleX, scaleY, {/*empty block needed*/});
+								var y = 0;
+								for (var i = 0; i < fit.lines.length; i++) {
+									var lineWidth = doc.widthOfString(fit.lines[i]);
+									var x;
+									switch (fieldOptions.align) {
+										case 'left':  	x = 0; 				   			break;
+										case 'right': 	x = (fit.width - lineWidth); 	break;
+										default: 		x = (fit.width - lineWidth)/2; 	break;
+									}
+									doc.text(fit.lines[i], x, y);
+									y += doc.currentLineHeight();
+								}
+							} else {
+								// Single line: limit ratio in horizontal direction as well.
+								var lineWidth = doc.widthOfString(fit.lines[0]);
+								var scaleX = options.width  / lineWidth;
+									scaleY = options.height / doc.currentLineHeight();
+								if (scaleX > scaleY * fieldOptions.maxHRatio) {
+									scaleX = scaleY * fieldOptions.maxHRatio;
+								}
 								var x;
 								switch (fieldOptions.align) {
 									case 'left':  	x = 0; 				   			break;
-									case 'right': 	x = (fit.width - lineWidth); 	break;
-									default: 		x = (fit.width - lineWidth)/2; 	break;
+									case 'right': 	x = (options.width - lineWidth * scaleX); 	break;
+									default: 		x = (options.width - lineWidth * scaleX)/2; 	break;
 								}
-								doc.text(fit.lines[i], x, y);
-								y += doc.currentLineHeight();
+								doc.translate(x, 0);
+								doc.scale(scaleX, scaleY, {/*empty block needed*/});
+								doc.text(fit.lines[0], 0, 0);
 							}
-						} else {
-							// Single line: limit ratio in horizontal direction as well.
-							var lineWidth = doc.widthOfString(fit.lines[0]);
-							var scaleX = options.width  / lineWidth;
-								scaleY = options.height / doc.currentLineHeight();
-							if (scaleX > scaleY * fieldOptions.maxHRatio) {
-								scaleX = scaleY * fieldOptions.maxHRatio;
-							}
-							var x;
-							switch (fieldOptions.align) {
-								case 'left':  	x = 0; 				   			break;
-								case 'right': 	x = (options.width - lineWidth * scaleX); 	break;
-								default: 		x = (options.width - lineWidth * scaleX)/2; 	break;
-							}
-							doc.translate(x, 0);
+							break;
+						}
+						case 'price': {
+							// Price field have 3 parts:
+							// - Currency sign
+							// - Main part (taller)
+							// - Decimal part
+							// All 3 parts use the same X scaling (i.e. the char widths
+							// are the same), but the main part is taller and so uses
+							// a greater Y factor.
+							var currency = fieldOptions.currency;
+							var separator = fieldOptions.separator;
+							var parts = text.split(currency);
+							parts = parts[parts.length-1].split(separator);
+							var main = parts[0];
+							var decimal = parts[1] || "  ";
+							
+							// Compute X scaling of currency+main+decimal parts.
+							var scaleX = (width - padX) / doc.widthOfString(currency+main+decimal);
+							
+							// Compute Y scaling of currency+decimal and main parts.
+							var scaleY     = (height                  - padY*2) / doc.currentLineHeight(),
+								scaleYMain = (fieldOptions.mainHeight - padY*2) / doc.currentLineHeight();
+								
+							// Output parts.
+							var x = 0;
+							
+							// - Currency.
+							doc.save();
 							doc.scale(scaleX, scaleY, {/*empty block needed*/});
-							doc.text(fit.lines[0], 0, 0);
+							doc.text(currency, x, 0);
+							doc.restore();
+							x += doc.widthOfString(currency);
+							fieldCoords[id + ".currency"] = left + x*scaleX;
+							
+							// - Main.
+							doc.save();
+							if (font.opentype) {
+								// Shift main part upwards to align character tops.
+								// - Logical line height = ascender - descender.
+								var line = font.opentype.ascender - font.opentype.descender;
+								
+								// - Logical top position = yMax for glyph 'T' (could be any other glyph with top bar).
+								var top = font.opentype.ascender - font.opentype.charToGlyph('T').yMax;
+								
+								// - Actual top position for each part.
+								var yBase = top * (height                  - padY*2) / line,
+									yMain = top * (fieldOptions.mainHeight - padY*2) / line;
+								doc.translate(0, yBase-yMain);
+							}
+							doc.scale(scaleX, scaleYMain, {/*empty block needed*/});
+							doc.text(main, x, 0);
+							doc.restore();
+							x += doc.widthOfString(main);
+							fieldCoords[id + ".separator"] = left + x*scaleX;
+							
+							// - Decimal.
+							doc.scale(scaleX, scaleY, {/*empty block needed*/});
+							doc.text(decimal, x, 0);
 						}
-						break;
-					}
-					case 'price': {
-						// Price field have 3 parts:
-						// - Currency sign
-						// - Main part (taller)
-						// - Decimal part
-						// All 3 parts use the same X scaling (i.e. the char widths
-						// are the same), but the main part is taller and so uses
-						// a greater Y factor.
-						var currency = fieldOptions.currency;
-						var separator = fieldOptions.separator;
-						var parts = text.split(currency);
-						parts = parts[parts.length-1].split(separator);
-						var main = parts[0];
-						var decimal = parts[1] || "  ";
-						
-						// Compute X scaling of currency+main+decimal parts.
-						var scaleX = (width - padX) / doc.widthOfString(currency+main+decimal);
-						
-						// Compute Y scaling of currency+decimal and main parts.
-						var scaleY     = (height                  - padY*2) / doc.currentLineHeight(),
-							scaleYMain = (fieldOptions.mainHeight - padY*2) / doc.currentLineHeight();
-							
-						// Output parts.
-						var x = 0;
-						
-						// - Currency.
-						doc.save();
-						doc.scale(scaleX, scaleY, {/*empty block needed*/});
-						doc.text(currency, x, 0);
-						doc.restore();
-						x += doc.widthOfString(currency);
-						fieldCoords[id + ".currency"] = left + x*scaleX;
-						
-						// - Main.
-						doc.save();
-						if (font.opentype) {
-							// Shift main part upwards to align character tops.
-							// - Logical line height = ascender - descender.
-							var line = font.opentype.ascender - font.opentype.descender;
-							
-							// - Logical top position = yMax for glyph 'T' (could be any other glyph with top bar).
-							var top = font.opentype.ascender - font.opentype.charToGlyph('T').yMax;
-							
-							// - Actual top position for each part.
-							var yBase = top * (height                  - padY*2) / line,
-								yMain = top * (fieldOptions.mainHeight - padY*2) / line;
-							doc.translate(0, yBase-yMain);
-						}
-						doc.scale(scaleX, scaleYMain, {/*empty block needed*/});
-						doc.text(main, x, 0);
-						doc.restore();
-						x += doc.widthOfString(main);
-						fieldCoords[id + ".separator"] = left + x*scaleX;
-						
-						// - Decimal.
-						doc.scale(scaleX, scaleY, {/*empty block needed*/});
-						doc.text(decimal, x, 0);
 					}
 				}
-			}
+			}			
 			doc.restore();
 			
 			// Done!
@@ -534,6 +549,9 @@ var refreshEvent = null;
 
 /** Last scraped sentences. */
 var scrapedSentences = [];
+
+/** Last scraped images. */
+var scrapedImages = [];
 
 /** Last random seed at scrape time. */
 var lastRandomSeed = randomSeed;
@@ -857,6 +875,12 @@ function fetchCallback(provider, info) {
 		$.each(info.description, function(i, v) {
 			v = normalizeString(v);
 			if (v != "") scrapedSentences.push(v);
+		});
+		
+		// Fetch scraped images. As loading is asynchronous, trigger a refresh once loaded.
+		scrapedImages = [];
+		$.each(info.images, function(i, v) {
+			scrapedImages[i] = new ImageFile(fetchUrl + "?url=" + encodeURIComponent(v), scheduleRefresh);
 		});
 		
 		// Trigger display with a new random speed.
