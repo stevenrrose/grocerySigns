@@ -321,6 +321,9 @@ function generatePDF(template) {
 			
 			// Box origin.
 			doc.translate(left, top);
+
+			// Rotation.
+			if (fieldOptions.angle) doc.rotate(fieldOptions.angle);
 			
 			if (DEBUG) {
 				doc.rect(0, 0, width, height).stroke();
@@ -331,6 +334,11 @@ function generatePDF(template) {
 				// White on black.
 				doc.rect(0, 0, width, height).fill('black');
 				doc.fill('white');
+			}
+			
+			if (field.background) {
+				// Background image.
+				doc.image(field.background.data, 0, 0, {width: width, height: height});
 			}
 	 
 			// Get & normalize field value.
@@ -343,7 +351,6 @@ function generatePDF(template) {
 				var padX = fieldOptions.padX,
 					padY = fieldOptions.padY;
 				doc.translate(padX, padY);
-				if (fieldOptions.angle) doc.rotate(fieldOptions.angle);
 
 				var font = fieldOptions.font;
 				doc.font(typeof(font) === 'string' ? font : font.data);
