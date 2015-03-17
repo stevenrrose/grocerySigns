@@ -123,10 +123,7 @@
 							</div>	
 						</div>
 						<script>
-						$("#randomize").change(function(){
-							$("#seed, #genSeed").prop('disabled', !$("#randomize").prop('checked'));
-							$("#seed").change();
-						});
+						$("#randomize").change(seedChanged);
 						$("#seed").change(seedChanged).keyup(seedChanged);
 						$("#genSeed").click(function() {
 							$("#seed").val(generateRandomSeed()).change();

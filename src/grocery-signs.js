@@ -681,7 +681,8 @@ function buildPages() {
 		});
 	});
 
-	refresh();
+//	refresh();
+	decodeHash();//FIXME
 }
 
 /**
@@ -858,12 +859,9 @@ function fetchCallback(provider, info) {
 		// Success, gather & display product data.
 		scrapeMessage(true, "Success!", provider.name + " ID = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.itemId  + "</a>");
 		
-		// Remember item ID for filename generation.
-		lastScrapedId = info.itemId;
-		
 		// Build sentences to populate fields with.
 		// - title, vendor and price (even empty to ensure predictable order).
-		scrapedSentences = [
+		var sentences = [
 			normalizeString(info.title), 
 			normalizeString(info.vendor), 
 			normalizeString(info.price),
@@ -871,25 +869,23 @@ function fetchCallback(provider, info) {
 		// - nonempty feature bullet items.
 		$.each(info.features, function(i, v) {
 			v = normalizeString(v);
-			if (v != "") scrapedSentences.push(v);
+			if (v != "") sentences.push(v);
 		});
 		// - nonempty description sentences.
 		$.each(info.description, function(i, v) {
 			v = normalizeString(v);
-			if (v != "") scrapedSentences.push(v);
+			if (v != "") sentences.push(v);
 		});
 		
-		// Fetch scraped images. As loading is asynchronous, trigger a refresh once loaded.
-		scrapedImages = [];
-		$.each(info.images, function(i, v) {
-			scrapedImages[i] = new ImageFile(fetchUrl + "?url=" + encodeURIComponent(v), scheduleRefresh);
+		// Update app state with new info.
+		updateState({
+			provider: provider.name,
+			id: info.itemId,
+			randomize: $("#randomize").prop('checked'),
+			seed: generateRandomSeed(),
+			sentences: sentences,
+			images: info.images,
 		});
-		
-		// Enable randomize button. It is disabled by default for manual input mode.
-		$("#randomize").prop('disabled', false);
-		
-		// Trigger display with a new random speed.
-		$("#seed").val(generateRandomSeed()).change();
 	} else {
 		// Failure.
 		scrapeMessage(false, "Scraping failed!", provider.name + " ID = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.itemId + "</a>");
@@ -958,8 +954,52 @@ function scrapeFields() {
  *  Called when random seed is changed by any means. Reshuffles fields & refresh pages.
  */
 function seedChanged() {
-	lastRandomSeed = $("#seed").val();
+	updateState($.extend({}, currentState, {randomize: $("#randomize").prop('checked'), seed: $("#seed").val()}));
+}
+
+// TODO
+var currentHash = undefined;
+var currentState = undefined;
+function updateState(state) {
+	// Compute hash from info.
+	var hash = JSON.stringify(state);
+	
+	// No need to update everything if hash didn't change.
+	if (currentHash == hash) return;
+	
+	$("#autofill-provider option[value='" + state.provider + "']").prop('selected', true);
+	$("#randomize").prop('disabled', false).prop('checked', state.randomize);
+	$("#seed, #genSeed").prop('disabled', !state.randomize);
+	$("#seed").val(state.seed);
+	lastRandomSeed = state.seed; // TODO remove lastRandomSeed and use state.seed directly.
+	lastScrapedId = state.id; // TODO ditto
+	scrapedSentences = state.sentences; // TODO ditto
+	if (typeof(currentState) !== 'undefined' && state.images !== currentState.images) {
+		scrapedImages = [];
+		$.each(state.images, function(i, v) {
+			scrapedImages[i] = new ImageFile(fetchUrl + "?url=" + encodeURIComponent(v), scheduleRefresh);
+		});
+	}
+	$(".FIELD").prop('readonly', true);
+	
+	currentHash = hash;
+	currentState = state;
+	window.location.hash = hash;
+	
+	
 	computeActualMaxFieldLengths();
 	populateFields();
 	refresh();
 }
+
+function decodeHash() {
+	console.log("decodeHash", window.location.hash);
+	// Decode info block from hash.
+	var hash = window.location.hash.substr(1);
+	
+	// No need to update everything if hash didn't change.
+	if (currentHash == hash) return;
+	
+	updateState(JSON.parse(hash));
+}
+window.addEventListener('hashchange', decodeHash);
