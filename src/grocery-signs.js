@@ -358,7 +358,13 @@ function generatePDF(template) {
 				}
 			} else {
 				// Get & normalize field value.
-				var text = normalizeString($("#" + fieldOptions.inputId).val());
+				var text;
+				if (fieldOptions.type == 'static') {
+					text = fieldOptions.text;
+				} else {
+					text = $("#" + fieldOptions.inputId).val();
+				}
+				text = normalizeString(text);
 				if (fieldOptions.filter) text = fieldOptions.filter(text);
 				maxLength = fieldOptions.actualMaxLength;
 				if (maxLength) text = text.substring(0, maxLength);
@@ -371,7 +377,8 @@ function generatePDF(template) {
 					var font = fieldOptions.font;
 					doc.font(typeof(font) === 'string' ? font : font.data);
 					switch (fieldOptions.type) {
-						case 'text': {
+						case 'text':
+						case 'static': {
 							// Regular text field: use harmonious word wrapping.
 							var options = {
 								width:    width  - padX*2,
@@ -566,6 +573,7 @@ function generateFieldInputs() {
 	var fieldNames = {};
 	$.each(templates, function(key, template) {
 		$.each(template.fields, function(id, field) {
+			if (field.type == 'image' || field.type == 'static') return;
 			if (field.inputId) id = field.inputId;
 			fieldNames[id] = 1;
 		});
@@ -994,6 +1002,13 @@ function updateState(state) {
 
 function decodeHash() {
 	console.log("decodeHash", window.location.hash);
+	
+	if (window.location.hash == "") {
+		// No hash.
+		refresh();
+		return;
+	}
+	
 	// Decode info block from hash.
 	var hash = window.location.hash.substr(1);
 	
