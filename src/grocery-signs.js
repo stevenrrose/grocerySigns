@@ -982,7 +982,7 @@ function updateState(state) {
 	$("#randomize").prop('disabled', false).prop('checked', state.randomize);
 	$("#seed, #genSeed").prop('disabled', !state.randomize);
 	$("#seed").val(state.seed);
-	if (typeof(currentState) === 'undefined' || state.images !== currentState.images) {
+	if (typeof(currentState) === 'undefined' || JSON.stringify(state.images) !== JSON.stringify(currentState.images) /* FIXME: ugly but straightforward */) {
 		scrapedImages = [];
 		$.each(state.images, function(i, v) {
 			scrapedImages[i] = new ImageFile(fetchUrl + "?url=" + encodeURIComponent(v), imageLoaded);
