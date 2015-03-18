@@ -12,20 +12,23 @@
  * 	FontFile constructor.
  *
  *	@param url		URL of font file. Must be on same domain.
+ *	@param onload		Called when data loaded.
  */
-function FontFile(url) {
+function FontFile(url, onload) {
 	this.url = url;
 	this.data = undefined;
 	this.opentype = undefined;
 	
 	// Load font data.
-	this._load();
+	this._load(onload);
 }
 
 /**
  *  Load font data using AJAX.
+ *  
+ *	@param onload		Called when data loaded.
  */
-FontFile.prototype._load = function() {	
+FontFile.prototype._load = function(onload) {	
     var request = new XMLHttpRequest();
     request.open('get', this.url, true);
     request.responseType = 'arraybuffer';
@@ -42,6 +45,21 @@ FontFile.prototype._load = function() {
 		} else {
 			font.opentype = info;
 		}
+		
+		// Callback.
+		if (onload) onload(font);
     };
     request.send();
+	console.log("Font loading scheduled", font.url)
+}
+
+
+/**
+ *  Utility callback, schedules a full refresh upon font loading.
+ *  
+ *  @param font	Loaded FontFile object.
+ */
+function fontLoaded(font) {
+	console.log("Font loaded", font);
+	scheduleRefresh();
 }

@@ -25,6 +25,8 @@ function ImageFile(url, onload) {
 
 /**
  *  Load image data using AJAX.
+ *  
+ *	@param onload		Called when data loaded.
  */
 ImageFile.prototype._load = function(onload) {	
     var request = new XMLHttpRequest();
@@ -48,7 +50,19 @@ ImageFile.prototype._load = function(onload) {
 			+ ";base64,"
 			+ btoa(String.fromCharCode.apply(null, new Uint8Array(request.response)));
 			
+		// Callback.
 		if (onload) onload(image);
     };
     request.send();
+	console.log("Image loading scheduled", image.url)
+}
+
+/**
+ *  Utility callback, schedules a full refresh upon image loading.
+ *  
+ *  @param image	Loaded ImageFile object.
+ */
+function imageLoaded(image) {
+	console.log("Image loaded", image);
+	scheduleRefresh();
 }

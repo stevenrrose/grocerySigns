@@ -101,9 +101,9 @@
 var globalMaxLength = 100;
 
 /** Load our fonts. */
-var Raiders = new FontFile("fonts/Raiders.ttf");
-var SansPosterBold = new FontFile("fonts/SansPosterBold.ttf");
-var ArialBlack = new FontFile("fonts/ArialBlack.ttf");
+var Raiders = new FontFile("fonts/Raiders.ttf", fontLoaded);
+var SansPosterBold = new FontFile("fonts/SansPosterBold.ttf", fontLoaded);
+var ArialBlack = new FontFile("fonts/ArialBlack.ttf", fontLoaded);
 
 var templates = {
 	"Raiders (Letter)" : {
@@ -217,7 +217,7 @@ var templates = {
 			"STATIC02"	: { left: 45,   top: 330, right: 70,  bottom: 390, type: 'static', text: "\u2022", font: 'Helvetica' },
 			"FIELD04.2" : { left: 70, 	top: 310, right: 450, bottom: 390, inputId: "FIELD04", align: 'left', filter: function(text) {return splitWords(text).slice(-1).join(" ");} },
 			"FIELD05"   : { left: 376, 	top: 420, right: 535, bottom: 760 },
-			"FIELD06"   : { left: 460, 	top: 340, right: 550, bottom: 415, angle: 15, padX: 22, padY: 18, background: new ImageFile("images/bang.png") },
+			"FIELD06"   : { left: 460, 	top: 340, right: 550, bottom: 415, angle: 15, padX: 22, padY: 18, background: new ImageFile("images/bang.png", imageLoaded) },
 			"FIELD07"   : { left: 35, 	top: 100, right: 560, bottom: 135 },
 			"STATIC03"	: { left: 230,  top: 420, right: 376, bottom: 650, type: 'static', text: "$" },
 			"STATIC04"	: { left: 230,  top: 650, right: 376, bottom: 760, type: 'static', text: "FOR" },

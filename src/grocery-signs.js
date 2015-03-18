@@ -12,9 +12,6 @@ var USE_SAVEAS=false;
 /** Override default fetch URL. */
 fetchUrl = "scraper/fetch.php";
 
-/** Last scraped ID. */
-var lastScrapedId;
-
 /*
  *
  * Algorithms and functions.
@@ -556,14 +553,8 @@ var refreshDelay = 500; /*ms*/
 /** Last scheduled refresh event. */
 var refreshEvent = null;
 
-/** Last scraped sentences. */
-var scrapedSentences = [];
-
 /** Last scraped images. */
 var scrapedImages = [];
-
-/** Last random seed at scrape time. */
-var lastRandomSeed = randomSeed;
 
 /**
  *  Generate field inputs from template specs.
@@ -688,9 +679,6 @@ function buildPages() {
 			refreshFrame(i);
 		});
 	});
-
-//	refresh();
-	decodeHash();//FIXME
 }
 
 /**
@@ -704,15 +692,15 @@ function buildPages() {
 function getFileName(index) {
 	var templateName = $("#page-template-" + index).val();
 	
-	if (!lastScrapedId) {
+	if (!currentState || !currentState.id) {
 		// Manual input.
 		return templateName + ".pdf";
 	}
 	
 	var provider = $("#autofill-provider option:selected").text();
-	var filename = provider + "-" + lastScrapedId + "-" + templateName;
-	if ($("#randomize").prop('checked')) {
-		filename += "-" + $("#seed").val();
+	var filename = provider + "-" + currentState.id + "-" + templateName;
+	if (currentState.randomize) {
+		filename += "-" + currentState.seed;
 	}
 	return filename + ".pdf";
 }
@@ -837,16 +825,16 @@ function scrapeMessage(success, title, message) {
  */
 function populateFields() {
 	var values;
-	if ($("#randomize").prop('checked')) {
+	if (currentState.randomize) {
 		// Filter out empty strings.
-		values = scrapedSentences.filter(function(val) {return (val != "");});
+		values = currentState.sentences.filter(function(val) {return (val != "");});
 		
 		// Randomize remaining strings. Reset random seed first.
-		randomSeed = lastRandomSeed;
+		randomSeed = currentState.seed;
 		shuffleArray(values);
 	} else {
 		// Use sentences in order.
-		values = scrapedSentences;
+		values = currentState.sentences;
 	}
 
 	// Populate fields with resulting values.
@@ -965,9 +953,24 @@ function seedChanged() {
 	updateState($.extend({}, currentState, {randomize: $("#randomize").prop('checked'), seed: $("#seed").val()}));
 }
 
-// TODO
+
+/*
+ *
+ * URL hash handling. 
+ *
+ */
+ 
+/** Current hash, used for quick change detection. */
 var currentHash = undefined;
+
+/** Current state object. */
 var currentState = undefined;
+
+/**
+ *  Update app state with given data.
+ *  
+ *  @param state	State object.
+ */
 function updateState(state) {
 	// Compute hash from info.
 	var hash = JSON.stringify(state);
@@ -979,32 +982,30 @@ function updateState(state) {
 	$("#randomize").prop('disabled', false).prop('checked', state.randomize);
 	$("#seed, #genSeed").prop('disabled', !state.randomize);
 	$("#seed").val(state.seed);
-	lastRandomSeed = state.seed; // TODO remove lastRandomSeed and use state.seed directly.
-	lastScrapedId = state.id; // TODO ditto
-	scrapedSentences = state.sentences; // TODO ditto
-	if (typeof(currentState) !== 'undefined' && state.images !== currentState.images) {
+	if (typeof(currentState) === 'undefined' || state.images !== currentState.images) {
 		scrapedImages = [];
 		$.each(state.images, function(i, v) {
-			scrapedImages[i] = new ImageFile(fetchUrl + "?url=" + encodeURIComponent(v), scheduleRefresh);
+			scrapedImages[i] = new ImageFile(fetchUrl + "?url=" + encodeURIComponent(v), imageLoaded);
 		});
 	}
 	$(".FIELD").prop('readonly', true);
 	
 	currentHash = hash;
 	currentState = state;
+	randomSeed = state.seed;
 	window.location.hash = hash;
-	
 	
 	computeActualMaxFieldLengths();
 	populateFields();
 	refresh();
 }
 
+/**
+ *  Decode state from hash value. Used as hashchange event handler.
+ */
 function decodeHash() {
-	console.log("decodeHash", window.location.hash);
-	
 	if (window.location.hash == "") {
-		// No hash.
+		// No hash, simply refresh the app.
 		refresh();
 		return;
 	}
