@@ -11,7 +11,7 @@
 /**
  * 	FontFile constructor.
  *
- *	@param url		URL of font file. Must be on same domain.
+ *	@param url			URL of font file. Must be on same domain.
  *	@param onload		Called when data loaded.
  */
 function FontFile(url, onload) {
