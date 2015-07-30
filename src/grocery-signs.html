@@ -4,15 +4,15 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Grocery Signs</title>
+    <title>GROCERY SIGNS</title>
 
     <!-- jQuery -->
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     
     <!-- Bootstrap -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="theme.css">
     
 	<!-- Artoo -->
 	<script src="https://medialab.github.io/artoo/public/dist/artoo-0.3.0.min.js"></script>
@@ -56,22 +56,23 @@
 <body>
     <div class="container">
         <div class="page-header">
-            <h1>Grocery Signs</h1>
+            <h1><sup>2 </sup>Grocery Signs</h1>
         </div>
         
         <!-- Parameters -->
         <div class="panel panel-default">
-            <div id="parameters" class="panel-heading">
-                <form class="form-horizontal" role="form" onsubmit="return false">
+			<div id="parameters" class="panel-body">
+				<form role="form" onsubmit="return false">
                     <!-- Layout -->
-                    <div id="layout" class="form-group">
+					<!--
+                    <div style="display:none" id="layout" class="form-group">
                         <label class="col-sm-3 control-label">Display</label>
                         <div class="col-sm-9">
 							<div class="form-inline">
 								<select id="columns" class="form-control">
-									<option value="0" selected>Auto</option>
+									<option value="0">Auto</option>
 									<option value="1">1</option>
-									<option value="2">2</option>
+									<option value="2" selected>2</option>
 									<option value="3">3</option>
 									<option value="4">4</option>
 									<option value="6">6</option>
@@ -91,37 +92,43 @@
 						$("#columns, #rows").change(buildPages);
 						</script>
                     </div>
+					-->
+					<input type="hidden" id="columns" value="2">
+					<input type="hidden" id="rows" value="5">
 
-                    <!-- Autofill -->
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">Autofill</label>
-                        <div class="col-sm-9">
-							<div class="input-group">
-								<select id="autofill-provider" class="form-control"></select>
-								<script>
-								$.each(providers, function(key, value) {
-									$("#autofill-provider").append(new Option(value.name, key));
-								});
-								</script>
-								<span class="input-group-btn">
-									<button type="button" id="autofill" class="btn btn-primary" onclick="scrapeFields()"><span class="glyphicon glyphicon-arrow-right"></span> Go!</button>
-								</span>
-							</div>								
+					<div class="row">
+					
+						<!-- Source -->
+						<div class="form-group col-sm-3">
+							<label class="control-label">Source</label>
+							<select id="autofill-provider" class="form-control"></select>
+							<script>
+							$.each(providers, function(key, value) {
+								$("#autofill-provider").append(new Option(value.name, key));
+							});
+							</script>
 						</div>
-                    </div>
-
-                    <!-- Randomize -->
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label" for="randomize">Shuffle</label>
-                        <div class="col-sm-9">
-							<div class="input-group">
-								<span class="input-group-addon"><input type="checkbox" id="randomize" disabled></span>
-								<input type="number" class="form-control" id="seed" placeholder="Seed" min="0" max="999999" disabled>
-								<span class="input-group-btn">
-									<button type="button" id="genSeed" class="btn btn-default" disabled><span class="glyphicon glyphicon-refresh"></span></button>
-								</span>
-							</div>	
+						
+						<!-- Generate button -->
+						<div class="form-group col-sm-3">
+							<label class="control-label hidden-xs">&nbsp;</label>
+							<button type="button" id="autofill" class="btn btn-primary form-control" onclick="scrapeFields()">Generate <span class="icon icon-generate"></span></button>
 						</div>
+						
+						<!-- Random seed -->
+						<div class="form-group col-sm-3">
+							<label for="seed" class="control-label">Pull No.</label>
+							<input type="number" class="form-control" id="seed" placeholder="Seed" min="0" max="999999" disabled>
+						</div>
+						<div class="form-group col-sm-3 col-half">
+							<label class="control-label hidden-xs">&nbsp;</label>
+							<button type="button" id="genSeed" class="btn btn-default btn-round form-control" disabled><span class="sr-only">Refresh seed </span><span class="icon icon-generate"></span></button>
+						</div>
+						<div class="form-group col-sm-3 col-half">
+							<label class="control-label hidden-xs">&nbsp;</label>
+							<label class="btn btn-default form-control disabled"><input type="checkbox" id="randomize" disabled /><span> Rdm.</span></label>
+						</div>
+						
 						<script>
 						$("#randomize").change(seedChanged);
 						$("#seed").change(seedChanged).keyup(seedChanged);
@@ -129,18 +136,21 @@
 							$("#seed").val(generateRandomSeed()).change();
 						});
 						</script>
-                    </div>
+					</div>
 				</form>
+				
+				<!-- Template field container -->
+				<div id="fields" class="collapse in">
+					<hr/>
+					<form class="row" role="form"></form>
+				</div>
+				
 				<button id="fieldsCollapse" type="button" data-toggle="collapse" data-target="#fields" aria-expanded="false" aria-controls="fields">
 					<span class="caret"></span>
 					<span class="sr-only">Show/hide field panel</span>
 				</button>
 			</div>
 					
-			<!-- Template field container -->
-            <div id="fields" class="panel-body collapse in">
-                <form class="form-horizontal" role="form"></form>
-			</div>
 			<script>
 			// Generate fields.
 			generateFieldInputs();
@@ -164,20 +174,28 @@
                     <h4 class="modal-title" id="scrapeLabel">Scraping In Progress...</h4>
                 </div>
                 <div class="modal-body">
-                    <!-- Progress bar -->
-                    <div id="progress" class="progress progress-striped active">
-                      <div class="progress-bar" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="1" style="width: 0%">
-                        <span class="sr-only">0%</span>
-                      </div>
-                    </div>
-                    <!-- Progress texts -->
-                    <p id="progressStep"></p>
+					<div class="form-group">
+						<!-- Progress bar -->
+						<div id="progress" class="progress active">
+						  <div class="progress-bar" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="1" style="width: 0%">
+							<span class="sr-only">0%</span>
+						  </div>
+						</div>
+						<!-- Progress texts -->
+						<p id="progressStep"></p>
+					</div>
                 </div>
             </div>
         </div>
     </div>
 	
 	<script>
+	// Styling.
+	$("select").wrap("<div class='styled-select'></div>");
+	$("input[type='number']").wrap("<div class='styled-input'></div>").after("<span class='input-spinbox-up'></span><span class='input-spinbox-down'></span>");
+	$(".input-spinbox-up").click(function(e){$(this).parent().find("input")[0].stepUp();e.stopPropagation();});
+	$(".input-spinbox-down").click(function(e){$(this).parent().find("input")[0].stepDown();e.stopPropagation();});
+	
 	// Build & refresh interface.
 	buildPages();
 	decodeHash();

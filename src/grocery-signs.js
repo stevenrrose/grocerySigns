@@ -572,11 +572,9 @@ function generateFieldInputs() {
 
 	// Generate inputs.
 	$.each(fieldNames, function(id) {
-		$("#fields form").append($('<div class="form-group" />')
-			.append($('<label for="' + id + '" class="col-sm-3 control-label" />').text(id))
-			.append($('<div class="col-sm-9" />')
-				.append('<input class="FIELD form-control" id="' + id + '" />')
-			)
+		$("#fields form").append($('<div class="form-group col-sm-3" />')
+			.append($('<label for="' + id + '" class="control-label" />').text(id))
+			.append('<input class="FIELD form-control" id="' + id + '" />')
 		);
 	});
 	$(".FIELD").change(scheduleRefresh).keyup(scheduleRefresh);
@@ -640,19 +638,19 @@ function buildPages() {
 	// Create page elements.
 	for (var i=0; i < nbPages; i++) {
 		var page = "<div class='page-container " + colClass + "'>";
-		page += "<div class='thumbnail'>";
-        page += "<div class='input-group input-group-sm'>";
-		page += "<select id='page-template-" + i + "' class='page-template form-control'></select>";
-        page += "<span class='input-group-btn'>";
+        page += "<div class='input-group'>";
+		page += "<div class='styled-select'><select id='page-template-" + i + "' class='page-template form-control'></select></div>";
+        page += "<span class='input-group-addon input-group-btn'>";
 		if (USE_SAVEAS) {
 			// Download uses saveAs().
-			page += "<button type='button' class='btn btn-default' onclick='downloadPDF(" + i + ")'><span class='glyphicon glyphicon-download'></span> PDF</button>";
+			page += "<button type='button' class='btn btn-primary' onclick='downloadPDF(" + i + ")'>PDF <span class='icon icon-arrow-down'></button>";
 		} else {
 			// Use plain download link with attributes set in refreshFrame(). 
-			page += "<a role='button' id='page-download-" + i + "' class='btn btn-default'><span class='glyphicon glyphicon-download'></span> PDF</a>";
+			page += "<a role='button' id='page-download-" + i + "' class='btn btn-primary'>PDF <span class='icon icon-arrow-down'></a>";
 		}
 		page += "</span>";
 		page += "</div>";
+		page += "<div class='thumbnail'>";
 		page += "<div id='page-" + i + "' data-index='" + i + "' class='page " + pageFormatClass + "'></div>";
 		page += "</div>";
 		page += "</div>";
@@ -979,7 +977,7 @@ function updateState(state) {
 	if (currentHash == hash) return;
 	
 	$("#autofill-provider option[value='" + state.provider + "']").prop('selected', true);
-	$("#randomize").prop('disabled', false).prop('checked', state.randomize);
+	$("#randomize").prop('disabled', false).prop('checked', state.randomize).closest('label').removeClass('disabled');
 	$("#seed, #genSeed").prop('disabled', !state.randomize);
 	$("#seed").val(state.seed);
 	if (typeof(currentState) === 'undefined' || JSON.stringify(state.images) !== JSON.stringify(currentState.images) /* FIXME: ugly but straightforward */) {
