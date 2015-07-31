@@ -193,8 +193,8 @@
 	// Styling.
 	$("select").wrap("<div class='styled-select'></div>");
 	$("input[type='number']").wrap("<div class='styled-input'></div>").after("<span class='input-spinbox-up'></span><span class='input-spinbox-down'></span>");
-	$(".input-spinbox-up").click(function(e){$(this).parent().find("input")[0].stepUp();e.stopPropagation();});
-	$(".input-spinbox-down").click(function(e){$(this).parent().find("input")[0].stepDown();e.stopPropagation();});
+	$(".input-spinbox-up")  .click(function(e) {e.stopPropagation(); var i = $(this).parent().find("input"); i[0].stepUp(); i.change();});
+	$(".input-spinbox-down").click(function(e) {e.stopPropagation(); var i = $(this).parent().find("input"); i[0].stepDown(); i.change();});
 	
 	// Build & refresh interface.
 	buildPages();
