@@ -16,6 +16,17 @@
 }
 
 
+/*
+ * Full-width containers.
+ */
+
+.container-fluid {
+	padding-left: 35px;
+	padding-right: 35px;
+	padding-bottom: 10px;
+}
+
+
 /* 
  * Control panel. 
  */
