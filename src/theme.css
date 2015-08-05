@@ -4,6 +4,10 @@
  *
  */
  
+body {
+	font-family: Arial, sans-serif;
+}
+ 
 /* 
  * Main title. 
  */
@@ -222,6 +226,7 @@ input[type=checkbox]:checked + *:before {
 }
 .styled-select {
 	position: relative;
+	min-height: 40px;
 }
 .form-inline .styled-select {
 	display: inline-block;
@@ -233,7 +238,9 @@ input[type=checkbox]:checked + *:before {
 	padding: 0 4px;
 	margin: 0 4px;
 	right: 0;
-	top: 20px;
+	top: 50%;
+	-webkit-transform: translateY(-50%);
+	-moz-transform: translateY(-50%);
 	transform: translateY(-50%);
 	font-family: "icons";
 	-webkit-font-smoothing: antialiased;
@@ -412,6 +419,8 @@ input[type=number] {
 	font-variant: normal;
 	text-transform: none;
 	line-height: 1;
+	display: inline-block;
+	vertical-align: middle;
 
 	/* Better Font Rendering =========== */
 	-webkit-font-smoothing: antialiased;
@@ -444,4 +453,10 @@ input[type=number] {
 }
 .icon-checkbox-on:before {
 	content: "\e608";
+}
+.icon-checkbox-group-off:before {
+	content: "\e609";
+}
+.icon-checkbox-group-on:before {
+	content: "\e60a";
 }
