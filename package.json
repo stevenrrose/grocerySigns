@@ -1,0 +1,22 @@
+{
+  "name": "grocery-signs",
+  "version": "1.0.0",
+  "main": "./src/server/index.js",
+  "author": {
+    "name": "Frédéric Bonnet",
+    "email": "fredericbonnet@free.fr"
+  },
+  "keywords": [],
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com//grocery-signs.git"
+  },
+  "bugs": {
+    "url": "http://github.com//grocery-signs/issues"
+  },
+  "dependencies": {
+    "express": "^4.13.3",
+    "swig": "^1.4.2"
+  }
+}
