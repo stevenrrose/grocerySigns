@@ -5,7 +5,7 @@
  */
 
 /** Default fetch page proxy. */
-var fetchUrl = "fetch.php";
+var fetchUrl = "fetch";
 
 /**
  * Generate a random string.

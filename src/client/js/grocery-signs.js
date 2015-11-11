@@ -10,7 +10,10 @@ var USE_SAVEAS=false;
  */
  
 /** Override default fetch URL. */
-fetchUrl = "scraper/fetch.php";
+fetchUrl = "scraper/fetch";
+
+/** Image fetch URL. */
+var fetchImage = "scraper/fetchImage";
 
 /*
  *
@@ -983,7 +986,7 @@ function updateState(state) {
 	if (typeof(currentState) === 'undefined' || JSON.stringify(state.images) !== JSON.stringify(currentState.images) /* FIXME: ugly but straightforward */) {
 		scrapedImages = [];
 		$.each(state.images, function(i, v) {
-			scrapedImages[i] = new ImageFile(fetchUrl + "?url=" + encodeURIComponent(v), imageLoaded);
+			scrapedImages[i] = new ImageFile(fetchImage + "?url=" + encodeURIComponent(v), imageLoaded);
 		});
 	}
 	$(".FIELD").prop('readonly', true);
