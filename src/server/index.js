@@ -2,13 +2,12 @@ var express = require('express');
 var app = express();
 
 app.get('/', function (req, res) {
-  res.send('Hello World!');
+  res.sendFile('/client/grocery-signs.html', {root: __dirname + '/..'});
 });
 
-app.use(express.static('../client'));
-app.use(express.static('../client'));
-app.use(express.static('../templates'));
-app.use('/scraper', express.static('../scraper'));
+app.use(express.static(__dirname + '/../client'));
+app.use(express.static(__dirname + '/../templates'));
+app.use('/scraper', express.static(__dirname + '/../scraper'));
 
 
 var server = app.listen(3000, function () {
