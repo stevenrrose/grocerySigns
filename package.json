@@ -16,6 +16,7 @@
     "url": "http://github.com//grocery-signs/issues"
   },
   "dependencies": {
+    "body-parser": "^1.14.1",
     "express": "^4.13.3",
     "mongodb": "^2.0.48",
     "mongoose": "^4.2.5",

@@ -1,7 +1,9 @@
 var request = require('request');
 var express = require('express');
+var bodyParser = require('body-parser');
 var swig = require('swig');
 var mongoose = require('mongoose');
+var Schema = mongoose.Schema;
 mongoose.connect('mongodb://localhost/grocery-signs');
 
 /**
@@ -10,6 +12,7 @@ mongoose.connect('mongodb://localhost/grocery-signs');
  * Main Express router instance. 
  */
 var app = express();
+app.use(bodyParser.json());
 
 /*
  * Static routes.
@@ -50,11 +53,33 @@ app.get('/scraper/fetch', function(req, res) {
  * 
  * @see /scraper/fetchImage
  */
-var Image = mongoose.model('Image', {
+var imageSchema = new Schema({
    url: { type: String, index: { unique: true }},
    type: String,
    data: Buffer
 });
+var Image = mongoose.model('Image', imageSchema);
+
+/**
+ * ScraperResult
+ * 
+ * Mongoose model for scraper results.
+ * 
+ * @property provider data provider Id (e.g. 'OkCupid')
+ * @property id provider-local page ID (e.g. 'hotgirl90')
+ * @property sentences array of strings from scraped page
+ * @property images array of image URLs from scraped page
+ * 
+ * @see /scraper/bookmark
+ */
+var scraperResultSchema = new Schema({
+   provider: String,
+   id: String,
+   sentences: [String],
+   images: [String]
+});
+scraperResultSchema.index({provider: 1, id: 1}, { unique: true });
+var ScraperResult = mongoose.model('ScraperResult', scraperResultSchema);
 
 /**
  * /scraper/fetchImage
@@ -68,10 +93,10 @@ var Image = mongoose.model('Image', {
  * 
  * @see Image
  */
-app.get('/scraper/fetchImage', function(req, res) {
+app.get('/scraper/fetchImage', function(req, res, next) {
     var url = req.query.url;
     Image.findOne({url: url}, function(err, image) {
-        if (err) throw err;
+        if (err) return next(err);
         
         if (image) {
             console.log("Found cached image", url, image.type, image.data.length);
@@ -87,12 +112,26 @@ app.get('/scraper/fetchImage', function(req, res) {
                 image.url = url;
                 image.type = response.headers['content-type'];
                 image.data = new Buffer(body, 'binary');
-                image.save(function (err, image) {
-                    if (err) throw err;
+                image.save(function (err) {
+                    if (err) return next(err);
                     console.log("Saved image to MongoDB", url);
                 });
             }
         }).pipe(res);
+    });
+});
+
+app.post('/scraper/bookmark', function(req, res, next) {
+    var result = new ScraperResult;
+    result.provider = req.body.provider;
+    result.id = req.body.id;
+    result.sentences = req.body.sentences;
+    result.images = req.body.images;
+    result.save(function (err) {
+        if (err) return next(err);
+        console.log("Saved scraper result to MongoDB", req.body);
+        res.location('/' + req.body.provider + '/' + req.body.id);
+        res.send('OK');
     });
 });
 
