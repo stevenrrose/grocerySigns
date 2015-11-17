@@ -22,15 +22,6 @@ app.use(express.static(__dirname + '/../templates'));
 app.use('/scraper', express.static(__dirname + '/../scraper'));
 
 /**
- * /
- * 
- * Application root.
- */
-app.get('/', function(req, res) {
-  res.sendFile('/client/grocery-signs.html', {root: __dirname + '/..'});
-});
-
-/**
  * /scraper/fetch
  * 
  * Simple proxy for scraper, allow client-side code to bypass CORS restriction 
@@ -132,6 +123,62 @@ app.post('/scraper/bookmark', function(req, res, next) {
         console.log("Saved scraper result to MongoDB", req.body);
         res.location('/' + req.body.provider + '/' + req.body.id);
         res.send('OK');
+    });
+});
+
+/**
+ * mainPageTpl
+ * 
+ * Template file for main HTML page.
+ */
+var mainPageTpl = swig.compileFile('../client/grocery-signs.html');
+
+/**
+ * providers
+ * 
+ * Provider list.
+ */
+var providers = ["Amazon", "eBay", "Etsy", "OkCupid"];
+
+/**
+ * /
+ * 
+ * Application root.
+ */
+app.get('/', function(req, res) {
+//  res.sendFile('/client/grocery-signs.html', {root: __dirname + '/..'});
+    res.send(mainPageTpl({providers: providers}));
+});
+
+/**
+ * /:provider
+ * 
+ * Main page with given provider pre-selected.
+ */
+app.get('/:provider', function(req, res, next) {
+    var provider = req.params.provider;
+    if (!providers.find(function(e) {return (e == provider);})) return next();
+    res.send(mainPageTpl({providers: providers, active_provider: provider}));
+});
+
+/**
+ * /:provider/:id
+ * 
+ * Static HTML page with input fields filled with scraped sentences, and 
+ * permalinks to PDFs and thumbnails.
+ */
+app.get('/:provider/:id', function(req, res, next) {
+    var provider = req.params.provider;
+    var id = req.params.id;
+    if (!providers.find(function(e) {return (e == provider);})) return next();
+    ScraperResult.findOne({provider: provider, id: id}, function(err, result) {
+        if (err) return next(err);
+        
+        if (!result) return next();
+        
+        console.log("Found cached scraper result", provider, id);
+        //TODO
+        res.send(result);
     });
 });
 
