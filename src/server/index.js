@@ -3,8 +3,11 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var swig = require('swig');
 var mongoose = require('mongoose');
+
 var Schema = mongoose.Schema;
 mongoose.connect('mongodb://localhost/grocery-signs');
+
+var scraper = require('./scraper.js');
 
 /**
  * app
@@ -22,7 +25,7 @@ app.use(express.static(__dirname + '/../templates'));
 app.use('/scraper', express.static(__dirname + '/../scraper'));
 
 /**
- * /scraper/fetch
+ * /scraper/fetch?url={url}
  * 
  * Simple proxy for scraper, allow client-side code to bypass CORS restriction 
  * on remote sites.
@@ -42,7 +45,7 @@ app.get('/scraper/fetch', function(req, res) {
  * @property type MIME type of image
  * @property data Binary image data
  * 
- * @see /scraper/fetchImage
+ * @see /scraper/fetchImage?url={url}
  */
 var imageSchema = new Schema({
    url: { type: String, index: { unique: true }},
@@ -73,12 +76,13 @@ scraperResultSchema.index({provider: 1, id: 1}, { unique: true });
 var ScraperResult = mongoose.model('ScraperResult', scraperResultSchema);
 
 /**
- * /scraper/fetchImage
+ * /scraper/fetchImage?url={url}
  * 
  * Retrieve image given its URL:
  * 
- * - If already cached in DB, return the stored data.
- * - Else download and store data in DB then return the downloaded data.
+ * - If already cached in the *Image* collection, return the stored data.
+ * - Else download and store data in the *Image* collection then return the 
+ *   downloaded data.
  * 
  * @param url URL of image to retrieve
  * 
@@ -112,6 +116,16 @@ app.get('/scraper/fetchImage', function(req, res, next) {
     });
 });
 
+/**
+ * /scraper/bookmark
+ * 
+ * Stores the posted JSON data into the *ScraperResult* collection.
+ * 
+ * @param {type} param1
+ * @param {type} param2
+ * 
+ * @see ScraperResult
+ */
 app.post('/scraper/bookmark', function(req, res, next) {
     var result = new ScraperResult;
     result.provider = req.body.provider;
@@ -138,7 +152,7 @@ var mainPageTpl = swig.compileFile('../client/grocery-signs.html');
  * 
  * Provider list.
  */
-var providers = ["Amazon", "eBay", "Etsy", "OkCupid"];
+var providers = Object.keys(scraper.providers);
 
 /**
  * /
