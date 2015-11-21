@@ -31,9 +31,6 @@
     PDFJS.workerSrc = "js/pdfjs/build/pdf.worker.js";
     </script>
 
-    <!-- FileSaver/saveAs for PDF download (https://github.com/eligrey/FileSaver.js) -->
-    <script src="js/FileSaver.min.js"></script>
-    
     <!-- Our stuff -->
     <!-- 1. Scraper -->
     <script>
@@ -64,39 +61,6 @@
         <div class="panel panel-default">
             <div id="parameters" class="panel-body">
                 <form role="form" onsubmit="return false">
-                    <!-- Layout -->
-                    <!--
-                    <div style="display:none" id="layout" class="form-group">
-                        <label class="col-sm-3 control-label">Display</label>
-                        <div class="col-sm-9">
-                            <div class="form-inline">
-                                <select id="columns" class="form-control">
-                                    <option value="0">Auto</option>
-                                    <option value="1">1</option>
-                                    <option value="2" selected>2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="6">6</option>
-                                </select>
-                                &times;
-                                <select id="rows" class="form-control">
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3" selected>3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                </select>
-                            </div>
-                            <p class="help-block">Max columns/rows per page</p>
-                        </div>
-                        <script>
-                        $("#columns, #rows").change(buildPages);
-                        </script>
-                    </div>
-                    -->
-                    <input type="hidden" id="columns" value="2">
-                    <input type="hidden" id="rows" value="5">
-
                     <div class="row">
                     
                         <!-- Source -->
@@ -165,6 +129,9 @@
     
     <!-- Container for pages -->
     <div id="pages" class="container-fluid"></div>
+    <script>
+    buildPages();
+    </script>
 
     <!-- Scraping progress modal dialog. -->
     <div class="modal fade" id="progressDialog" tabindex="-1" role="dialog" aria-labelledby="scrapeLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
@@ -196,8 +163,7 @@
     $(".input-spinbox-up")  .click(function(e) {e.stopPropagation(); var i = $(this).parent().find("input"); i[0].stepUp(); i.change();});
     $(".input-spinbox-down").click(function(e) {e.stopPropagation(); var i = $(this).parent().find("input"); i[0].stepDown(); i.change();});
     
-    // Build & refresh interface.
-    buildPages();
+    // Refresh interface.
     decodeHash();
     </script>
 </body>

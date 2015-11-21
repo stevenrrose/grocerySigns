@@ -1,8 +1,5 @@
 var DEBUG=false;
 
-// Whether to use FileSave.js' saveAs() or plain <a> link.
-var USE_SAVEAS=false;
-
 /*
  *
  * Scraping.
@@ -545,11 +542,6 @@ function renderPDF(url, container) {
 /** Default page format class (see grocery-signs.css) */
 var pageFormatClass = "page-iso";
 
-/** Remember selected templates for each page so that we can change the layout
- *  while preserving the template order. By default pages display all available
- *  templates in order. */
-var selectedTemplates = Object.keys(templates);
-
 /** Delay for scheduled refresh events. */
 var refreshDelay = 500; /*ms*/
 
@@ -587,70 +579,24 @@ function generateFieldInputs() {
  *  Build the output page elements.
  */
 function buildPages() {
-    // No need to display more pages than available templates.
-    var nbPages = Object.keys(templates).length;
-    
-    // Adjust column layout.
-    var columns = parseInt($("#columns").val());
-    var colClass;
-    switch (columns) {
-        case 0:
-            // Automatic, use 3-column responsive layout.
-            columns = 4;
-            colClass = "col-xs-12";
-            if (nbPages >= 2) {
-                colClass += " col-sm-6";
-            }
-            if (nbPages >= 3) {
-                colClass += " col-md-4";
-            }
-            if (nbPages >= 4) {
-                colClass += " col-lg-3";
-            }
-            break;
-            
-        case 1:
-            colClass = "col-xs-12";
-            break;
-            
-        case 2:
-            colClass = "col-xs-12 col-sm-6";
-            break;
-            
-        case 3:
-            colClass = "col-xs-12 col-sm-4";
-            break;
-            
-        case 4:
-            colClass = "col-xs-12 col-sm-3";
-            break;
-            
-        case 6:
-            colClass = "col-xs-12 col-sm-2";
-            break;
-    }
-
-    // Don't display more pages than needed.
-    var rows = parseInt($("#rows").val());
-    nbPages = Math.min(nbPages, columns * rows);
-    
     // Clear existing pages.
     var $pages = $("#pages");
     $pages.empty();
     
     // Create page elements.
-    for (var i=0; i < nbPages; i++) {
-        var page = "<div class='page-container " + colClass + "'>";
+    var i=0;
+    $.each(templates, function(name) {
+        var page = "<div class='page-container col-xs-12 col-sm-6'>";
         page += "<div class='input-group'>";
-        page += "<div class='styled-select'><select id='page-template-" + i + "' class='page-template form-control'></select></div>";
+        page += "<div class='styled-select'><select id='page-template-" + i + "' class='page-template form-control'>";
+        var j=0;
+        $.each(templates, function(key) {
+            page += "<option" + (i==j ? " selected" : "") + ">" + key + "</option>";
+            j++;
+        });
+        page += "</select></div>";
         page += "<span class='input-group-addon input-group-btn'>";
-        if (USE_SAVEAS) {
-            // Download uses saveAs().
-            page += "<button type='button' class='btn btn-primary' onclick='downloadPDF(" + i + ")'>PDF <span class='icon icon-arrow-down'></button>";
-        } else {
-            // Use plain download link with attributes set in refreshFrame(). 
-            page += "<a role='button' id='page-download-" + i + "' class='btn btn-primary'>PDF <span class='icon icon-arrow-down'></a>";
-        }
+        page += "<a role='button' id='page-download-" + i + "' class='btn btn-primary'>PDF <span class='icon icon-arrow-down'></span></a>";
         page += "</span>";
         page += "</div>";
         page += "<div class='thumbnail'>";
@@ -658,29 +604,18 @@ function buildPages() {
         page += "</div>";
         page += "</div>";
         $pages.append(page);
-    }
+        i++;
+    });
     
-    // Populate template selects from *templates* keys (see templates.js), and bind change event.
+    // Bind change event for each template select.
     $(".page-template").each(function(i, e) {
-        // Add each template name to select.
-        $.each(templates, function(key) {
-            $(e).append(new Option(key));
-        });
-        
-        // Select active template.
-        $(e).val(selectedTemplates[i]);
-        
         // Refresh page on change.
         $(e).change(function() {
-            // Remember newly selected template.
-            var templateName = $(e).val();
-            selectedTemplates[i] = templateName;
-            
             // Refresh page.
             refreshFrame(i);
         });
     });
-}
+} 
 
 /**
  *  Get file name for the given page.
@@ -747,14 +682,12 @@ function refreshFrame(index) {
     stream.on('finish', function() {
         var url = stream.toBlobURL('application/pdf');
         renderPDF(url, container);
-        if (!USE_SAVEAS) {
-            // Set link attributes.
-            var index = $(container).data("index");
-            $("#page-download-" + index)
-                .attr('href', url)
-                .attr('target', '_blank')
-                .attr('download', fileName);
-        }
+        // Set link attributes.
+        var index = $(container).data("index");
+        $("#page-download-" + index)
+            .attr('href', url)
+            .attr('target', '_blank')
+            .attr('download', fileName);
     });
 }
 
