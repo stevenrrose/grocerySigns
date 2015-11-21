@@ -104,7 +104,12 @@
                 <!-- Template field container -->
                 <div id="fields" class="collapse in">
                     <hr/>
-                    <form class="row" role="form"></form>
+                    <form class="row" role="form">{% for field in fields %}
+                        <div class="form-group col-sm-3">
+                            <label for="{{field}}" class="control-label">{{field}}</label>
+                            <input class="FIELD form-control" id="{{field}}" />
+                        </div>
+                    {% endfor %}</form>
                 </div>
                 
                 <button id="fieldsCollapse" type="button" data-toggle="collapse" data-target="#fields" aria-expanded="false" aria-controls="fields">
@@ -114,8 +119,8 @@
             </div>
                     
             <script>
-            // Generate fields.
-            generateFieldInputs();
+            // Refresh interface on field change.
+            $(".FIELD").change(scheduleRefresh).keyup(scheduleRefresh);
             
             // Toggle collapse button icon.
             $("#fields")

@@ -359,7 +359,7 @@ function generatePDF(template) {
                 if (fieldOptions.type == 'static') {
                     text = fieldOptions.text;
                 } else {
-                    text = $("#" + fieldOptions.inputId).val();
+                    text = scrapedTexts[fieldOptions.inputId];
                 }
                 text = normalizeString(text);
                 if (fieldOptions.filter) text = fieldOptions.filter(text);
@@ -548,32 +548,11 @@ var refreshDelay = 500; /*ms*/
 /** Last scheduled refresh event. */
 var refreshEvent = null;
 
+/** Last scraped texts. */
+var scrapedTexts = {};
+
 /** Last scraped images. */
 var scrapedImages = [];
-
-/**
- *  Generate field inputs from template specs.
- */
-function generateFieldInputs() {
-    // Merge all templates field names.
-    var fieldNames = {};
-    $.each(templates, function(key, template) {
-        $.each(template.fields, function(id, field) {
-            if (field.type == 'image' || field.type == 'static') return;
-            if (field.inputId) id = field.inputId;
-            fieldNames[id] = 1;
-        });
-    }); 
-
-    // Generate inputs.
-    $.each(fieldNames, function(id) {
-        $("#fields form").append($('<div class="form-group col-sm-3" />')
-            .append($('<label for="' + id + '" class="control-label" />').text(id))
-            .append('<input class="FIELD form-control" id="' + id + '" />')
-        );
-    });
-    $(".FIELD").change(scheduleRefresh).keyup(scheduleRefresh);
-}
 
 /**
  *  Get file name for the given page.
@@ -653,6 +632,11 @@ function refreshFrame(index) {
  *  Refresh all active pages.
  */
 function refresh() {
+    // Refresh scraped text array.
+    $(".FIELD").each(function(i, e) {
+        scrapedTexts[$(e).attr("id")] = $(e).val();
+    });
+    
     // Call refreshFrame on each active page.
     $(".page").each(function(index) {
         refreshFrame(index);
