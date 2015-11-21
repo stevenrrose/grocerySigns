@@ -8,6 +8,7 @@ var Schema = mongoose.Schema;
 mongoose.connect('mongodb://localhost/grocery-signs');
 
 var scraper = require('./scraper.js');
+var templates = require('./templates.js').templates;
 
 /**
  * app
@@ -161,7 +162,10 @@ var providers = Object.keys(scraper.providers);
  */
 app.get('/', function(req, res) {
 //  res.sendFile('/client/grocery-signs.html', {root: __dirname + '/..'});
-    res.send(mainPageTpl({providers: providers}));
+    res.send(mainPageTpl({
+        providers: providers, 
+        templates: templates
+    }));
 });
 
 /**
@@ -171,8 +175,15 @@ app.get('/', function(req, res) {
  */
 app.get('/:provider', function(req, res, next) {
     var provider = req.params.provider;
-    if (!providers.find(function(e) {return (e == provider);})) return next();
-    res.send(mainPageTpl({providers: providers, active_provider: provider}));
+    if (!providers.find(function(e) {return (e == provider);})) {
+        // Provider not found.
+        return next();
+    }
+    res.send(mainPageTpl({
+        providers: providers, 
+        templates: templates, 
+        active_provider: provider
+    }));
 });
 
 /**

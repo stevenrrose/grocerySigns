@@ -576,48 +576,6 @@ function generateFieldInputs() {
 }
 
 /**
- *  Build the output page elements.
- */
-function buildPages() {
-    // Clear existing pages.
-    var $pages = $("#pages");
-    $pages.empty();
-    
-    // Create page elements.
-    var i=0;
-    $.each(templates, function(name) {
-        var page = "<div class='page-container col-xs-12 col-sm-6'>";
-        page += "<div class='input-group'>";
-        page += "<div class='styled-select'><select id='page-template-" + i + "' class='page-template form-control'>";
-        var j=0;
-        $.each(templates, function(key) {
-            page += "<option" + (i==j ? " selected" : "") + ">" + key + "</option>";
-            j++;
-        });
-        page += "</select></div>";
-        page += "<span class='input-group-addon input-group-btn'>";
-        page += "<a role='button' id='page-download-" + i + "' class='btn btn-primary'>PDF <span class='icon icon-arrow-down'></span></a>";
-        page += "</span>";
-        page += "</div>";
-        page += "<div class='thumbnail'>";
-        page += "<div id='page-" + i + "' data-index='" + i + "' class='page " + pageFormatClass + "'></div>";
-        page += "</div>";
-        page += "</div>";
-        $pages.append(page);
-        i++;
-    });
-    
-    // Bind change event for each template select.
-    $(".page-template").each(function(i, e) {
-        // Refresh page on change.
-        $(e).change(function() {
-            // Refresh page.
-            refreshFrame(i);
-        });
-    });
-} 
-
-/**
  *  Get file name for the given page.
  *  
  *  @param index    Page index.

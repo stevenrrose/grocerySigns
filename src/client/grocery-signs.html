@@ -66,11 +66,9 @@
                         <!-- Source -->
                         <div class="form-group col-sm-3">
                             <label class="control-label">Source</label>
-                            <select id="autofill-provider" class="form-control">
-                                {% for provider in providers %}
+                            <select id="autofill-provider" class="form-control">{% for provider in providers %}
                                 <option value="{{provider}}"{% if active_provider == provider%} selected{% endif %}>{{provider}}</option>
-                                {% endfor %}
-                            </select>
+                            {% endfor %}</select>
                         </div>
                         
                         <!-- Generate button -->
@@ -128,9 +126,24 @@
     </div>
     
     <!-- Container for pages -->
-    <div id="pages" class="container-fluid"></div>
+    <div id="pages" class="container-fluid">{% for template in templates %}
+        <div class="page-container col-xs-12 col-sm-6">
+            <div class="input-group">
+            <div class="styled-select"><select id="page-template-{{loop.index0}}" class="page-template form-control">{% for t in templates %}
+                <option{% if t == template%} selected{% endif %}>{{loop.key}}</option>
+            {% endfor %}</select></div>
+            <span class="input-group-addon input-group-btn">
+            <a role="button" id="page-download-{{loop.index0}}" class="btn btn-primary">PDF <span class="icon icon-arrow-down"></span></a>
+            </span>
+            </div>
+            <div class="thumbnail">
+            <div id="page-{{loop.index0}}" data-index="{{loop.index0}}" class="page"></div>
+            </div>
+        </div>
+    {% endfor %}</div>
     <script>
-    buildPages();
+    $(".page").addClass(pageFormatClass);
+    $(".page-template").each(function(i, e) {$(e).change(function() {refreshFrame(i);});});
     </script>
 
     <!-- Scraping progress modal dialog. -->
