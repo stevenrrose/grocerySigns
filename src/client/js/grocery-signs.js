@@ -247,7 +247,7 @@ PDFJS.disableWorker = true;
  *  
  *  @see refreshFrame()
  */
-function generatePDF(template) {
+function generatePDF(template, sentences, images) {
     // Create PDF document with template size.
     var doc = new PDFDocument({size: [template.width, template.height]});
     var stream = doc.pipe(blobStream());
@@ -345,11 +345,11 @@ function generatePDF(template) {
             
             if (fieldOptions.type == 'image') {
                 // Output next scraped image.
-                if (imageIndex <= scrapedImages.length && scrapedImages[imageIndex] && scrapedImages[imageIndex].data) {
+                if (imageIndex <= images.length && images[imageIndex] && images[imageIndex].data) {
                     try {
-                        doc.image(scrapedImages[imageIndex].data, 0, 0, {fit: [width, height], align: 'center', valign: 'center'});
+                        doc.image(images[imageIndex].data, 0, 0, {fit: [width, height], align: 'center', valign: 'center'});
                     } catch (e) {
-                        console.error("generatePDF", "PDFKit exception with image", scrapedImages[imageIndex], e);
+                        console.error("generatePDF", "PDFKit exception with image", images[imageIndex], e);
                     }
                     imageIndex++;
                 }
@@ -359,7 +359,7 @@ function generatePDF(template) {
                 if (fieldOptions.type == 'static') {
                     text = fieldOptions.text;
                 } else {
-                    text = scrapedTexts[fieldOptions.inputId];
+                    text = sentences[fieldOptions.inputId];
                 }
                 text = normalizeString(text);
                 if (fieldOptions.filter) text = fieldOptions.filter(text);
@@ -555,6 +555,20 @@ var scrapedTexts = {};
 var scrapedImages = [];
 
 /**
+ * Deferred loading of images.
+ * 
+ * @param {array} images    list of image URLs
+ * 
+ * @see ImageFile
+ */
+function loadImages(images) {
+    scrapedImages = [];
+    $.each(images, function(i, v) {
+        scrapedImages[i] = new ImageFile(fetchImage + "?url=" + encodeURIComponent(v), imageLoaded);
+    });
+}
+
+/**
  *  Get file name for the given page.
  *  
  *  @param index    Page index.
@@ -590,7 +604,7 @@ function downloadPDF(index) {
     var templateName = $("#page-template-" + index).val();
     var fileName = getFileName(index);
     
-    var stream = generatePDF(templates[templateName]);
+    var stream = generatePDF(templates[templateName], scrapedTexts, scrapedImages);
 
     // Download the blob as PDF.
     stream.on('finish', function() {
@@ -613,7 +627,7 @@ function refreshFrame(index) {
     var templateName = $("#page-template-" + index).val();
     var fileName = getFileName(index);
     
-    var stream = generatePDF(templates[templateName]);
+    var stream = generatePDF(templates[templateName], scrapedTexts, scrapedImages);
 
     // Output the PDF blob into given container.
     stream.on('finish', function() {
@@ -880,7 +894,7 @@ var currentState = undefined;
 /**
  *  Update app state with given data.
  *  
- *  @param state    State object.
+ *  @param {object} state   State object.
  */
 function updateState(state) {
     // Compute hash from info.
@@ -894,10 +908,7 @@ function updateState(state) {
     $("#seed, #genSeed").prop('disabled', !state.randomize);
     $("#seed").val(state.seed);
     if (typeof(currentState) === 'undefined' || JSON.stringify(state.images) !== JSON.stringify(currentState.images) /* FIXME: ugly but straightforward */) {
-        scrapedImages = [];
-        $.each(state.images, function(i, v) {
-            scrapedImages[i] = new ImageFile(fetchImage + "?url=" + encodeURIComponent(v), imageLoaded);
-        });
+        loadImages(state.images);
     }
     $(".FIELD").prop('readonly', true);
     

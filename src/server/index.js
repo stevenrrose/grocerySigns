@@ -184,7 +184,7 @@ app.get('/:provider', function(req, res, next) {
         providers: providers, 
         active_provider: provider,
         fields: templates.fields,
-        templates: templates, 
+        templates: templates.templates,
     }));
 });
 
@@ -204,8 +204,14 @@ app.get('/:provider/:id', function(req, res, next) {
         if (!result) return next();
         
         console.log("Found cached scraper result", provider, id);
-        //TODO
-        res.send(result);
+        res.send(mainPageTpl({
+            providers: providers, 
+            active_provider: provider,
+            fields: templates.fields,
+            templates: templates.templates,
+            sentences: result.sentences,
+            images: JSON.stringify(result.images),
+        }));
     });
 });
 

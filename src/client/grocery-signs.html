@@ -66,9 +66,11 @@
                         <!-- Source -->
                         <div class="form-group col-sm-3">
                             <label class="control-label">Source</label>
-                            <select id="autofill-provider" class="form-control">{% for provider in providers %}
+                            <select id="autofill-provider" class="form-control">
+                                {% for provider in providers %}
                                 <option value="{{provider}}"{% if active_provider == provider%} selected{% endif %}>{{provider}}</option>
-                            {% endfor %}</select>
+                                {% endfor %}
+                            </select>
                         </div>
                         
                         <!-- Generate button -->
@@ -104,13 +106,18 @@
                 <!-- Template field container -->
                 <div id="fields" class="collapse in">
                     <hr/>
-                    <form class="row" role="form">{% for field in fields %}
+                    <form class="row" role="form">
+                        {% for field in fields %}
                         <div class="form-group col-sm-3">
                             <label for="{{field}}" class="control-label">{{field}}</label>
-                            <input class="FIELD form-control" id="{{field}}" />
+                            <input class="FIELD form-control" id="{{field}}" {% if sentences %} value="{{sentences[loop.index0]}}" readonly{% endif %}/>
                         </div>
-                    {% endfor %}</form>
+                        {% endfor %}
+                    </form>
                 </div>
+                {%if images %}<script>{# Scraped images are put in the scrapedImages object. #}
+                loadImages({{images|safe}});
+                </script>{% endif %}
                 
                 <button id="fieldsCollapse" type="button" data-toggle="collapse" data-target="#fields" aria-expanded="false" aria-controls="fields">
                     <span class="caret"></span>
@@ -131,12 +138,15 @@
     </div>
     
     <!-- Container for pages -->
-    <div id="pages" class="container-fluid">{% for template in templates %}
+    <div id="pages" class="container-fluid">
+        {% for template in templates %}
         <div class="page-container col-xs-12 col-sm-6">
             <div class="input-group">
-            <div class="styled-select"><select id="page-template-{{loop.index0}}" class="page-template form-control">{% for t in templates %}
+            <div class="styled-select"><select id="page-template-{{loop.index0}}" class="page-template form-control">
+                {% for t in templates %}
                 <option{% if t == template%} selected{% endif %}>{{loop.key}}</option>
-            {% endfor %}</select></div>
+                {% endfor %}
+            </select></div>
             <span class="input-group-addon input-group-btn">
             <a role="button" id="page-download-{{loop.index0}}" class="btn btn-primary">PDF <span class="icon icon-arrow-down"></span></a>
             </span>
@@ -145,7 +155,8 @@
             <div id="page-{{loop.index0}}" data-index="{{loop.index0}}" class="page"></div>
             </div>
         </div>
-    {% endfor %}</div>
+        {% endfor %}
+    </div>
     <script>
     $(".page").addClass(pageFormatClass);
     $(".page-template").each(function(i, e) {$(e).change(function() {refreshFrame(i);});});
