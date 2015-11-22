@@ -220,6 +220,7 @@ app.get('/:provider/:id', function(req, res, next) {
             active_provider: provider,
             fields: templates.fields,
             templates: templates.templates,
+            active_id: id,
             sentences: result.sentences,
             images: JSON.stringify(result.images),
         }));
@@ -254,15 +255,35 @@ app.get('/:provider/:id/:template.pdf', function(req, res, next) {
         // Found! Generate PDF with scraped data.
         console.log("Found cached scraper result", provider, id);
         
+        // Build sentence map.
+        //TODO randomize
         var sentences = {};
         var i = 0;
         for (var field of templates.fields) {
             sentences[field] = result.sentences[i++];
         }
         
-        //TODO ImageFile from URLs.
-        
-        generatePDF(res, templates.templates[template], sentences, result.images);
+        if (result.images.length == 0) {
+            // No image.
+            generatePDF(res, templates.templates[template], sentences, []);
+            return;
+        }
+        // Fetch all image URLs from DB.
+        Image.find({url: {$in: result.images}}, function(err, results) {
+            var images = [];
+            if (!err && results) {
+                // Ensure that images are in the same order as URLs.
+                var imagesByUrl = {};
+                for (image of results) {
+                    console.log("Found cached image", image.url, image.type, image.data.length);
+                    imagesByUrl[image.url] = {url: image.url, type: image.type, data: image.data};
+                }
+                for (url of result.images) {
+                    images.push(imagesByUrl[url]);
+                }
+            }
+            generatePDF(res, templates.templates[template], sentences, images);
+        });
     });
 });
 

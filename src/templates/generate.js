@@ -135,7 +135,6 @@ function mergeObjects() {
  * @param {array}   images      List of ImageFile.
  */
 function generatePDF(stream, template, sentences, images) {
-    console.log(sentences, images);
     // Create PDF document with template size.
     var doc = new PDFDocument({size: [template.width, template.height]});
     doc.pipe(stream);
