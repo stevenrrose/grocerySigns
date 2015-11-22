@@ -11,6 +11,13 @@ var scraper = require('./scraper.js');
 var templates = require('./templates.js');
 
 /**
+ * providers
+ * 
+ * Provider list.
+ */
+var providers = Object.keys(scraper.providers);
+
+/**
  * app
  * 
  * Main Express router instance. 
@@ -22,6 +29,7 @@ app.use(bodyParser.json());
  * Static routes.
  */
 app.use(express.static(__dirname + '/../client'));
+app.use('/js', express.static(__dirname + '/../common'));
 app.use(express.static(__dirname + '/../templates'));
 app.use('/scraper', express.static(__dirname + '/../scraper'));
 
@@ -149,13 +157,6 @@ app.post('/scraper/bookmark', function(req, res, next) {
 var mainPageTpl = swig.compileFile('../client/grocery-signs.html');
 
 /**
- * providers
- * 
- * Provider list.
- */
-var providers = Object.keys(scraper.providers);
-
-/**
  * /
  * 
  * Application root.
@@ -176,10 +177,13 @@ app.get('/', function(req, res) {
  */
 app.get('/:provider', function(req, res, next) {
     var provider = req.params.provider;
+    
     if (!providers.find(function(e) {return (e == provider);})) {
-        // Provider not found.
+        // No such provider.
         return next();
     }
+    
+    // Generate page with provider pre-selected.
     res.send(mainPageTpl({
         providers: providers, 
         active_provider: provider,
@@ -197,12 +201,19 @@ app.get('/:provider', function(req, res, next) {
 app.get('/:provider/:id', function(req, res, next) {
     var provider = req.params.provider;
     var id = req.params.id;
-    if (!providers.find(function(e) {return (e == provider);})) return next();
+    
+    if (!providers.find(function(e) {return (e == provider);})) {
+        // No such provider.
+        return next();
+    }
+    
+    // Try to find scraped result for the given provider/id.
     ScraperResult.findOne({provider: provider, id: id}, function(err, result) {
         if (err) return next(err);
         
         if (!result) return next();
-        
+
+        // Found! Generate page with scraped data.
         console.log("Found cached scraper result", provider, id);
         res.send(mainPageTpl({
             providers: providers, 
@@ -212,6 +223,46 @@ app.get('/:provider/:id', function(req, res, next) {
             sentences: result.sentences,
             images: JSON.stringify(result.images),
         }));
+    });
+});
+
+/**
+ * /:provider/:id/:template.pdf
+ * 
+ * Permalinks to PDF (generated on the fly), crawlable from the HTML page.
+ */
+app.get('/:provider/:id/:template.pdf', function(req, res, next) {
+    var provider = req.params.provider;
+    var id = req.params.id;
+    var template = req.params.template;
+    
+    if (!providers.find(function(e) {return (e == provider);})) {
+        // No such provider.
+        return next();
+    }
+    if (!templates.templates[template]) {
+        // No such template.
+        return next();
+    }
+    
+    // Try to find scraped result for the given provider/id.
+    ScraperResult.findOne({provider: provider, id: id}, function(err, result) {
+        if (err) return next(err);
+        
+        if (!result) return next();
+
+        // Found! Generate PDF with scraped data.
+        console.log("Found cached scraper result", provider, id);
+        
+        var sentences = {};
+        var i = 0;
+        for (var field of templates.fields) {
+            sentences[field] = result.sentences[i++];
+        }
+        
+        //TODO ImageFile from URLs.
+        
+        generatePDF(res, templates.templates[template], sentences, result.images);
     });
 });
 

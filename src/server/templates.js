@@ -1,5 +1,5 @@
 /**
- * Umbrella module for client-side template files.
+ * Umbrella module for client-side template and PDF generation files.
  */
 
 // Modules for JS file loading.
@@ -18,15 +18,11 @@ function include(path) {
     vm.runInThisContext(code, path);
 }
 
-//TODO
+// Include the template definition file.
+global.FontFile = require("../common/FontFile.js");
+global.ImageFile = require("../common/ImageFile.js");
 global.fontLoaded = function() {}
 global.imageLoaded = function() {}
-
-global.FontFile = function(url, onload) {
-}
-global.ImageFile = function(url, onload) {
-}
-
 include('../templates/templates.js');
 
 // Export the above *global.templates* variable defined in above file.
@@ -44,3 +40,8 @@ for (var key in global.templates) {
     }
 }
 exports.fields = Object.keys(fieldNames);
+
+// Include and export the PDF generation functions.
+global.PDFDocument = require('pdfkit');
+include('../templates/generate.js');
+exports.generatePDF = global.generatePDF;
