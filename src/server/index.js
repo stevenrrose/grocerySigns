@@ -186,14 +186,14 @@ app.get('/:provider', function(req, res, next) {
     // Generate page with provider pre-selected.
     res.send(mainPageTpl({
         providers: providers, 
-        active_provider: provider,
         fields: templates.fields,
         templates: templates.templates,
+        active_provider: provider,
     }));
 });
 
 /**
- * /:provider/:id
+ * /:provider/:id?randomize={seed}
  * 
  * Static HTML page with input fields filled with scraped sentences, and 
  * permalinks to PDFs and thumbnails.
@@ -201,6 +201,15 @@ app.get('/:provider', function(req, res, next) {
 app.get('/:provider/:id', function(req, res, next) {
     var provider = req.params.provider;
     var id = req.params.id;
+    var randomize, seed;
+    if (typeof(req.query.seed) === 'undefined') {
+        randomize = false;
+        seed = generateRandomSeed();
+    } else {
+        randomize = true;
+        seed = parseInt(req.query.seed);
+        if (isNaN(seed)) return next('Invalid seed');
+    }
     
     if (!providers.find(function(e) {return (e == provider);})) {
         // No such provider.
@@ -215,24 +224,112 @@ app.get('/:provider/:id', function(req, res, next) {
 
         // Found! Generate page with scraped data.
         console.log("Found cached scraper result", provider, id);
+        var state = {
+            provider: provider,
+            id: id,
+            randomize: randomize,
+            seed: seed,
+            sentences: result.sentences,
+            images: result.images,
+        };
         res.send(mainPageTpl({
             providers: providers, 
-            active_provider: provider,
             fields: templates.fields,
             templates: templates.templates,
-            active_id: id,
-            sentences: result.sentences,
-            images: JSON.stringify(result.images),
+            active_provider: provider,
+            active_state: state,
+            state: JSON.stringify(state),
         }));
     });
 });
 
 /**
- * /:provider/:id/:template.pdf
+ * /:provider/:id/:template.pdf?randomize={seed}
  * 
  * Permalinks to PDF (generated on the fly), crawlable from the HTML page.
  */
 app.get('/:provider/:id/:template.pdf', function(req, res, next) {
+    var provider = req.params.provider;
+    var id = req.params.id;
+    var template = req.params.template;
+    var randomize, seed;
+    if (typeof(req.query.randomize) === 'undefined') {
+        randomize = false;
+        seed = generateRandomSeed();
+    } else {
+        randomize = true;
+        seed = parseInt(req.query.randomize);
+        if (isNaN(seed)) return next('Invalid seed');
+    }
+    console.log(randomize, seed);
+    
+    if (!providers.find(function(e) {return (e == provider);})) {
+        // No such provider.
+        return next();
+    }
+    if (!templates.templates[template]) {
+        // No such template.
+        return next();
+    }
+    
+    // Try to find scraped result for the given provider/id.
+    ScraperResult.findOne({provider: provider, id: id}, function(err, result) {
+        if (err) return next(err);
+        
+        if (!result) return next();
+
+        // Found! Generate PDF with scraped data.
+        console.log("Found cached scraper result", provider, id);
+        
+        // Build sentence map.
+        var values;
+        if (randomize) {
+            values = shuffleSentences(result.sentences, seed);
+        } else {
+            // Use sentences in order.
+            values = result.sentences;
+        }
+        var fields = {};
+        var i = 0;
+        for (var field of templates.fields) {
+            fields[field] = values[i++];
+        }
+        
+        if (result.images.length == 0) {
+            // No image.
+            generatePDF(res, templates.templates[template], fields, []);
+            return;
+        }
+        // Fetch all image URLs from DB.
+        Image.find({url: {$in: result.images}}, function(err, results) {
+            var images = [];
+            if (!err && results) {
+                // Ensure that images are in the same order as URLs.
+                var imagesByUrl = {};
+                for (image of results) {
+                    console.log("Found cached image", image.url, image.type, image.data.length);
+                    imagesByUrl[image.url] = {url: image.url, type: image.type, data: image.data};
+                }
+                for (url of result.images) {
+                    images.push(imagesByUrl[url]);
+                }
+            }
+            generatePDF(res, templates.templates[template], fields, images);
+        });
+    });
+});
+
+/**
+ * /:provider/:id/:template.png
+ * 
+ * Permalinks to PDF thumbnails (generated on the fly), crawlable from the HTML page.
+ */
+app.get('/:provider/:id/:template.png', function(req, res, next) {
+    //FIXME disabled until we can get the canvas module working.
+    // https://github.com/Automattic/node-canvas/wiki/Installation---Windows
+    // http://www.delarre.net/posts/installing-node-canvas-for-windows/
+    return next();
+    
     var provider = req.params.provider;
     var id = req.params.id;
     var template = req.params.template;
@@ -282,7 +379,39 @@ app.get('/:provider/:id/:template.pdf', function(req, res, next) {
                     images.push(imagesByUrl[url]);
                 }
             }
-            generatePDF(res, templates.templates[template], sentences, images);
+            //FIXME use transform stream?
+            var streamBuffers = require('stream-buffers');
+            var stream = new streamBuffers.WritableStreamBuffer();
+            stream.on('finish', function() {
+                stream.end();
+                
+                // Generate PNG thumbnail.
+                var Canvas = require('canvas');
+                var PDFJS  = require('./pdf.js');
+                PDFJS.disableWorker = true;
+                PDFJS.getDocument(stream.getContents()).then(function(pdfDoc) {
+                    /* Only render the first page. */
+                    pdfDoc.getPage(1).then(function(page) {
+                    /* Create viewport and canvas. */
+                        var scale = 0.5;
+                        var viewport = page.getViewport(scale);
+                        var canvas = new Canvas(viewport.width, viewport.height);
+
+                        /* Render page. */
+                        page.render({
+                            canvasContext: canvas.getContext('2d'),
+                            viewport: viewport
+                        }).then(function () {
+                            canvas.pngStream().pipe(res);
+                        }, function (err) {
+                            console.log("Error generating PNG thumbnail", err);
+                        });
+
+                    });
+                });
+                
+            });
+            generatePDF(stream, templates.templates[template], sentences, images);
         });
     });
 });

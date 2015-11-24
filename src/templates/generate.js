@@ -1,9 +1,75 @@
 var DEBUG=false;
 
+/*
+ *
+ * Algorithms and functions.
+ *
+ */
+
+/** 
+ *  Generate random seed.
+ */
+function generateRandomSeed() {
+    return Math.floor(Math.random() * 1000000);
+}
+
+/** Random seed value used by srandom(). */
+var randomSeed = generateRandomSeed();
+
+/**
+ *  Seeded random number generator as JS doesn't provide one by default.
+ *  
+ *  @see generateRandomSeed()
+ *  @see randomSeed
+ *  @see http://indiegamr.com/generate-repeatable-random-numbers-in-js/ for the magic numbers.
+ */
+function srandom() {
+    randomSeed = (randomSeed * 9301 + 49297) % 233280;
+    return randomSeed / 233280;
+}
+
+/**
+ *  Randomize array element order in-place (using seeded random function).
+ *
+ *  Uses Fisher-Yates shuffle algorithm.
+ *
+ *  @param array    Array to shuffle.
+ *
+ *  @see srandom()
+ *  @see http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array#answer-12646864
+ */
+function shuffleArray(array) {
+    for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(srandom() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+    return array;
+}
+
+/**
+ * Shuffle the sentence list.
+ * 
+ * @param {array} sentences     list of sentence strings
+ * @param {type}  seed          random seed used by srandom()
+ * 
+ * @returns {array} shuffled sentence list
+ */
+function shuffleSentences(sentences, seed) {
+    // Filter out empty strings.
+    var values = sentences.filter(function(val) {return (val != "");});
+        
+    // Randomize remaining strings. Reset random seed first.
+    randomSeed = seed;
+    shuffleArray(values);
+    return values;
+}
+
 /**
  *  Split string into words.
  *  
- *  @param text     String to split.
+ *  @param {string} text    String to split.
  */
 function splitWords(text) {
     return text.split(/\s+/);
@@ -127,14 +193,57 @@ function mergeObjects() {
 }
 
 /**
+ *  Compute actual template field max length; values may be specified as single integer
+ *  or [min, max] randomization intervals (uses seeded random).
+ *  
+ *  @see srandom()
+ */
+function computeActualMaxFieldLengths() {
+    var actualValue = function(spec) {
+        if (spec) {
+            // Option specified.
+            if (spec.length == 2) {
+                // Specified as [min, max].
+                var min=spec[0], max=spec[1];
+                return min + srandom() * (max-min);
+            } else {
+                // Use raw specified value.
+                return spec;
+            }
+        }
+    }
+    for (var key in templates) {
+        var template = templates[key];
+        // Template-level option.
+        template.actualMaxLength = actualValue(template.maxLength);
+        
+        // Field-level options.
+        for (var fkey in template.fields) {
+            var field = template.fields[fkey];
+            field.actualMaxLength = actualValue(field.maxLength);
+        }
+    }
+}
+
+// Call at least once at startup.
+computeActualMaxFieldLengths();
+
+
+/*
+ *
+ * PDF Generation.
+ *
+ */
+
+/**
  *  Generate PDF from input fields for a given template.
  *  
  * @param {object}  stream      Output stream.
  * @param {object}  template    Template descriptor.
- * @param {object}  sentences   Field ID => text map.
+ * @param {object}  fields      Field ID => text map.
  * @param {array}   images      List of ImageFile.
  */
-function generatePDF(stream, template, sentences, images) {
+function generatePDF(stream, template, fields, images) {
     // Create PDF document with template size.
     var doc = new PDFDocument({size: [template.width, template.height]});
     doc.pipe(stream);
@@ -247,7 +356,7 @@ function generatePDF(stream, template, sentences, images) {
                 if (fieldOptions.type == 'static') {
                     text = fieldOptions.text;
                 } else {
-                    text = sentences[fieldOptions.inputId];
+                    text = fields[fieldOptions.inputId];
                 }
                 text = normalizeString(text);
                 if (fieldOptions.filter) text = fieldOptions.filter(text);

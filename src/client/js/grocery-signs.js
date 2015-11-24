@@ -17,25 +17,6 @@ var fetchImage = "scraper/fetchImage";
  *
  */
 
-/** 
- *  Generate random seed.
- */
-function generateRandomSeed() {
-    return Math.floor(Math.random() * 1000000);
-}
-
-var randomSeed = generateRandomSeed();
-
-/**
- *  Seeded random number generator as JS doesn't provide one by default.
- *  
- *  @see http://indiegamr.com/generate-repeatable-random-numbers-in-js/ for the magic numbers.
- */
-function srandom() {
-    randomSeed = (randomSeed * 9301 + 49297) % 233280;
-    return randomSeed / 233280;
-}
-
 /**
  * Generate a random string.
  *
@@ -58,60 +39,6 @@ function randomStr(size) {
 function splitSentences(text) {
     return text.replace(/([!?]|\.\.\.)\s+/g, "$1. ").split(/[.;]\s/);
 }
-
-/**
- *  Randomize array element order in-place (using seeded random function).
- *
- *  Uses Fisher-Yates shuffle algorithm.
- *
- *  @param array    Array to shuffle.
- *
- *  @see srandom()
- *  @see http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array#answer-12646864
- */
-function shuffleArray(array) {
-    for (var i = array.length - 1; i > 0; i--) {
-        var j = Math.floor(srandom() * (i + 1));
-        var temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
-    }
-    return array;
-}
-
-/**
- *  Compute actual template field max length; values may be specified as single integer
- *  or [min, max] randomization intervals (uses seeded random).
- *  
- *  @see srandom()
- */
-function computeActualMaxFieldLengths() {
-    var actualValue = function(spec) {
-        if (spec) {
-            // Option specified.
-            if (spec.length == 2) {
-                // Specified as [min, max].
-                var min=spec[0], max=spec[1];
-                return min + srandom() * (max-min);
-            } else {
-                // Use raw specified value.
-                return spec;
-            }
-        }
-    }
-    $.each(templates, function(key, template) {
-        // Template-level option.
-        template.actualMaxLength = actualValue(template.maxLength);
-        
-        // Field-level options.
-        $.each(template.fields, function(fkey, field) {
-            field.actualMaxLength = actualValue(field.maxLength);
-        });
-    });
-}
-
-// Call at least once at startup.
-computeActualMaxFieldLengths();
 
 
 /*
@@ -346,12 +273,7 @@ function displayMessage(success, title, message) {
 function populateFields() {
     var values;
     if (currentState.randomize) {
-        // Filter out empty strings.
-        values = currentState.sentences.filter(function(val) {return (val != "");});
-        
-        // Randomize remaining strings. Reset random seed first.
-        randomSeed = currentState.seed;
-        shuffleArray(values);
+        values = shuffleSentences(currentState.sentences, currentState.seed);
     } else {
         // Use sentences in order.
         values = currentState.sentences;
@@ -511,7 +433,7 @@ function bookmarkResult(info) {
 
 /*
  *
- * URL hash handling. 
+ * State handling. 
  *
  */
  
@@ -526,7 +448,7 @@ var currentState = undefined;
  *  
  *  @param {object} state   State object.
  */
-function updateState(state) {
+function updateState(state, replace) {
     // Compute hash from info.
     var hash = JSON.stringify(state);
     
@@ -545,29 +467,22 @@ function updateState(state) {
     currentHash = hash;
     currentState = state;
     randomSeed = state.seed;
-    window.location.hash = hash;
     
-    computeActualMaxFieldLengths();
+    if (replace) {
+        history.replaceState(state, null);
+    } else {
+        var url = '/'+state.provider+'/'+state.id;
+        if (state.randomize) {
+            url += '?seed=' + state.seed;
+        }
+        history.pushState(state, null, url);
+    }
+    
     populateFields();
     refresh();
 }
 
-/**
- *  Decode state from hash value. Used as hashchange event handler.
- */
-function decodeHash() {
-    if (window.location.hash == "") {
-        // No hash, simply refresh the app.
-        refresh();
-        return;
-    }
-    
-    // Decode info block from hash.
-    var hash = window.location.hash.substr(1);
-    
-    // No need to update everything if hash didn't change.
-    if (currentHash == hash) return;
-    
-    updateState(JSON.parse(hash));
-}
-window.addEventListener('hashchange', decodeHash);
+/** History state listener. */ 
+window.onpopstate = function() {
+    updateState(history.state, true);
+};

@@ -111,14 +111,11 @@
                         {% for field in fields %}
                         <div class="form-group col-sm-3">
                             <label for="{{field}}" class="control-label">{{field}}</label>
-                            <input class="FIELD form-control" id="{{field}}" {% if sentences %} value="{{sentences[loop.index0]}}" readonly{% endif %}/>
+                            <input class="FIELD form-control" id="{{field}}" {% if active_state %} value="{{active_state.sentences[loop.index0]}}" readonly{% endif %}/>
                         </div>
                         {% endfor %}
                     </form>
                 </div>
-                {%if images %}<script>{# Scraped images are put in the scrapedImages object. #}
-                loadImages({{images|safe}});
-                </script>{% endif %}
                 
                 <button id="fieldsCollapse" type="button" data-toggle="collapse" data-target="#fields" aria-expanded="false" aria-controls="fields">
                     <span class="caret"></span>
@@ -149,8 +146,8 @@
                 {% endfor %}
             </select></div>
             <span class="input-group-addon input-group-btn">
-            <a role="button" id="page-download-{{loop.index0}}" class="btn btn-primary" {% if active_id %}
-               href="/{{active_provider}}/{{active_id}}/{{loop.key}}.pdf" target="_blank" download="{{active_provider}}-{{active_id}}-{{loop.key}}.pdf"
+            <a role="button" id="page-download-{{loop.index0}}" class="btn btn-primary" {% if active_state %}
+               href="/{{active_state.provider}}/{{active_state.id}}/{{loop.key}}.pdf{% if active_state.randomize %}?randomize={{active_state.seed}}{% endif %}" target="_blank" download="{{active_state.provider}}-{{active_state.id}}-{{loop.key}}{% if active_state.randomize %}-{{active_state.seed}}{% endif %}.pdf"
             {% endif %}>PDF <span class="icon icon-arrow-down"></span></a>
             </span>
             </div>
@@ -195,8 +192,9 @@
     $(".input-spinbox-up")  .click(function(e) {e.stopPropagation(); var i = $(this).parent().find("input"); i[0].stepUp(); i.change();});
     $(".input-spinbox-down").click(function(e) {e.stopPropagation(); var i = $(this).parent().find("input"); i[0].stepDown(); i.change();});
     
-    // Refresh interface.
-    decodeHash();
+    {% if state %}
+    updateState({{state|safe}}, true);
+    {% endif %}
     </script>
 </body>
 </html>
