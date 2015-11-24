@@ -111,7 +111,7 @@
                         {% for field in fields %}
                         <div class="form-group col-sm-3">
                             <label for="{{field}}" class="control-label">{{field}}</label>
-                            <input class="FIELD form-control" id="{{field}}" {% if active_state %} value="{{active_state.sentences[loop.index0]}}" readonly{% endif %}/>
+                            <input class="FIELD form-control" id="{{field}}" {% if active_sentences %} value="{{active_sentences[loop.index0]}}" readonly{% endif %}/>
                         </div>
                         {% endfor %}
                     </form>

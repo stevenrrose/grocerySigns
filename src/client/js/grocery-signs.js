@@ -271,17 +271,17 @@ function displayMessage(success, title, message) {
  *  Populate fields 
  */
 function populateFields() {
-    var values;
+    var sentences;
     if (currentState.randomize) {
-        values = shuffleSentences(currentState.sentences, currentState.seed);
+        sentences = shuffleSentences(currentState.sentences, currentState.seed);
     } else {
         // Use sentences in order.
-        values = currentState.sentences;
+        sentences = currentState.sentences;
     }
 
     // Populate fields with resulting values.
     $(".FIELD").each(function(i, e) {
-        $(e).val(values[i]);
+        $(e).val(sentences[i]);
     });
 }
 
@@ -314,11 +314,14 @@ function fetchCallback(provider, info) {
             v = normalizeString(v);
             if (v != "") sentences.push(v);
         });
-                
+
+        var seed = generateRandomSeed();
+        
         // Bookmark result.
         bookmarkResult({
             provider: provider.name,
             id: info.itemId,
+            seed: seed,
             sentences: sentences,
             images: info.images,
         });
@@ -328,7 +331,7 @@ function fetchCallback(provider, info) {
             provider: provider.name,
             id: info.itemId,
             randomize: $("#randomize").prop('checked'),
-            seed: generateRandomSeed(),
+            seed: seed,
             sentences: sentences,
             images: info.images,
         });
@@ -466,7 +469,6 @@ function updateState(state, replace) {
     
     currentHash = hash;
     currentState = state;
-    randomSeed = state.seed;
     
     if (replace) {
         history.replaceState(state, null);
@@ -478,6 +480,7 @@ function updateState(state, replace) {
         history.pushState(state, null, url);
     }
     
+    computeActualMaxFieldLengths(state.seed);
     populateFields();
     refresh();
 }

@@ -78,6 +78,7 @@ var Image = mongoose.model('Image', imageSchema);
 var scraperResultSchema = new Schema({
    provider: String,
    id: String,
+   seed: Number,
    sentences: [String],
    images: [String]
 });
@@ -139,6 +140,7 @@ app.post('/scraper/bookmark', function(req, res, next) {
     var result = new ScraperResult;
     result.provider = req.body.provider;
     result.id = req.body.id;
+    result.seed = req.body.seed;
     result.sentences = req.body.sentences;
     result.images = req.body.images;
     result.save(function (err) {
@@ -202,12 +204,11 @@ app.get('/:provider/:id', function(req, res, next) {
     var provider = req.params.provider;
     var id = req.params.id;
     var randomize, seed;
-    if (typeof(req.query.seed) === 'undefined') {
+    if (typeof(req.query.randomize) === 'undefined') {
         randomize = false;
-        seed = generateRandomSeed();
     } else {
         randomize = true;
-        seed = parseInt(req.query.seed);
+        seed = parseInt(req.query.randomize);
         if (isNaN(seed)) return next('Invalid seed');
     }
     
@@ -224,6 +225,18 @@ app.get('/:provider/:id', function(req, res, next) {
 
         // Found! Generate page with scraped data.
         console.log("Found cached scraper result", provider, id);
+        
+        seed = (randomize ? seed : result.seed);
+        
+        // Shuffle sentences.
+        var sentences;
+        if (randomize) {
+            sentences = shuffleSentences(result.sentences, seed);
+        } else {
+            // Use sentences in order.
+            sentences = result.sentences;
+        }
+        
         var state = {
             provider: provider,
             id: id,
@@ -237,6 +250,7 @@ app.get('/:provider/:id', function(req, res, next) {
             fields: templates.fields,
             templates: templates.templates,
             active_provider: provider,
+            active_sentences: sentences,
             active_state: state,
             state: JSON.stringify(state),
         }));
@@ -247,6 +261,8 @@ app.get('/:provider/:id', function(req, res, next) {
  * /:provider/:id/:template.pdf?randomize={seed}
  * 
  * Permalinks to PDF (generated on the fly), crawlable from the HTML page.
+ * 
+ * TODO factorize code with HTML version
  */
 app.get('/:provider/:id/:template.pdf', function(req, res, next) {
     var provider = req.params.provider;
@@ -255,13 +271,11 @@ app.get('/:provider/:id/:template.pdf', function(req, res, next) {
     var randomize, seed;
     if (typeof(req.query.randomize) === 'undefined') {
         randomize = false;
-        seed = generateRandomSeed();
     } else {
         randomize = true;
         seed = parseInt(req.query.randomize);
         if (isNaN(seed)) return next('Invalid seed');
     }
-    console.log(randomize, seed);
     
     if (!providers.find(function(e) {return (e == provider);})) {
         // No such provider.
@@ -281,19 +295,25 @@ app.get('/:provider/:id/:template.pdf', function(req, res, next) {
         // Found! Generate PDF with scraped data.
         console.log("Found cached scraper result", provider, id);
         
-        // Build sentence map.
-        var values;
+        seed = (randomize ? seed : result.seed);
+        
+        // Shuffle sentences.
+        var sentences;
         if (randomize) {
-            values = shuffleSentences(result.sentences, seed);
+            sentences = shuffleSentences(result.sentences, seed);
         } else {
             // Use sentences in order.
-            values = result.sentences;
+            sentences = result.sentences;
         }
+        
+        // Build field map.
         var fields = {};
         var i = 0;
         for (var field of templates.fields) {
-            fields[field] = values[i++];
+            fields[field] = sentences[i++];
         }
+        
+        templates.computeActualMaxFieldLengths(seed);
         
         if (result.images.length == 0) {
             // No image.

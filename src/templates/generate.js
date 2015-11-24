@@ -196,9 +196,13 @@ function mergeObjects() {
  *  Compute actual template field max length; values may be specified as single integer
  *  or [min, max] randomization intervals (uses seeded random).
  *  
+ *  @param {number} seed random seed
+ *  
  *  @see srandom()
  */
-function computeActualMaxFieldLengths() {
+function computeActualMaxFieldLengths(seed) {
+    randomSeed = seed;
+    
     var actualValue = function(spec) {
         if (spec) {
             // Option specified.
@@ -226,7 +230,7 @@ function computeActualMaxFieldLengths() {
 }
 
 // Call at least once at startup.
-computeActualMaxFieldLengths();
+computeActualMaxFieldLengths(randomSeed);
 
 
 /*

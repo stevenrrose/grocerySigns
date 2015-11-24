@@ -45,3 +45,4 @@ exports.fields = Object.keys(fieldNames);
 global.PDFDocument = require('pdfkit');
 include('../templates/generate.js');
 exports.generatePDF = global.generatePDF;
+exports.computeActualMaxFieldLengths = global.computeActualMaxFieldLengths;
