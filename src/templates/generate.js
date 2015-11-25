@@ -182,9 +182,9 @@ function normalizeString(s) {
  * jquery.extend.
  */
 function mergeObjects() {
-    for(var i=1; i<arguments.length; i++) {
-        for(var key in arguments[i]) {
-            if(arguments[i].hasOwnProperty(key)) {
+    for (var i=1; i<arguments.length; i++) {
+        for (var key in arguments[i]) {
+            if (typeof(arguments[i][key]) !== 'undefined') {
                 arguments[0][key] = arguments[i][key];
             }
         }
