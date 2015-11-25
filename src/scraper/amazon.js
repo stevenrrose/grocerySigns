@@ -51,12 +51,12 @@ providers["Amazon"] = {
             {
                 scrape: {
                     params: {limit: 1},
-                    iterator: "#handleBuy",
+                    iterator: "#handleBuy,#centerCol",
                     data: {
-                        title: {sel: "#btAsinTitle"},
-                        price: {sel: "#actualPriceValue,span.pa_price,span.priceLarge"},
+                        title: {sel: "#btAsinTitle,#productTitle"},
+                        price: {sel: "#actualPriceValue,span.pa_price,span.priceLarge,#priceblock_ourprice"},
                         vendor: {sel: "#brand,.brandLink > a,span:starts-with('by') a:first", method: 'text'},
-                        features: {sel: "#feature-bullets-atf", scrape: {iterator: "li", data: 'text'}},
+                        features: {sel: "#feature-bullets-atf,#feature-bullets", scrape: {iterator: "li", data: 'text'}},
                         description: function() {
                             return splitSentences(
                                 $(this).parent().find("#productDescription > .content").text()
@@ -64,7 +64,9 @@ providers["Amazon"] = {
                                 return e.trim() != "";
                             });
                         },
-                        image: {sel: "#main-image", attr: 'src'},
+                        image: function() {
+                            return $(this).closest("#a-page").find("#main-image,#landingImage").attr("src");
+                        },
                     }
                 }
             },
@@ -105,4 +107,5 @@ if (typeof $ !== 'undefined') {
      *  Dummy function used in Amazon onload handlers, keeps JS happy.
      */
     function viewCompleteImageLoaded() {}
+    function setCSMReq() {}
 }
