@@ -147,7 +147,7 @@
             </select></div>
             <span class="input-group-addon input-group-btn">
             <a role="button" id="page-download-{{loop.index0}}" class="btn btn-primary" {% if active_state %}
-               href="/{{active_state.provider}}/{{active_state.id}}/{{loop.key}}.pdf{% if active_state.randomize %}?randomize={{active_state.seed}}{% endif %}" target="_blank" download="{{active_state.provider}}-{{active_state.id}}-{{loop.key}}{% if active_state.randomize %}-{{active_state.seed}}{% endif %}.pdf"
+               href="{{active_state.provider}}/{{active_state.id}}/{{loop.key}}.pdf{% if active_state.randomize %}?randomize={{active_state.seed}}{% endif %}" target="_blank" download="{{active_state.provider}}-{{active_state.id}}-{{loop.key}}{% if active_state.randomize %}-{{active_state.seed}}{% endif %}.pdf"
             {% endif %}>PDF <span class="icon icon-arrow-down"></span></a>
             </span>
             </div>
