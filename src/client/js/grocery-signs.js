@@ -475,7 +475,7 @@ function updateState(state, replace) {
     } else {
         var url = '/'+state.provider+'/'+state.id;
         if (state.randomize) {
-            url += '?seed=' + state.seed;
+            url += '?randomize=' + state.seed;
         }
         history.pushState(state, null, url);
     }
