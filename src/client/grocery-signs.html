@@ -83,7 +83,7 @@
                         <!-- Random seed -->
                         <div class="form-group col-sm-3">
                             <label for="seed" class="control-label">Pull No.</label>
-                            <input type="number" class="form-control" id="seed" placeholder="Seed" min="0" max="999999" disabled>
+                            <input type="number" class="form-control" id="seed" placeholder="Seed" min="0" max="999999" disabled {% if active_state.randomize %}value="{{active_state.seed}}"{% endif %}>
                         </div>
                         <div class="form-group col-sm-3 col-half">
                             <label class="control-label hidden-xs">&nbsp;</label>
@@ -91,7 +91,7 @@
                         </div>
                         <div class="form-group col-sm-3 col-half">
                             <label class="control-label hidden-xs">&nbsp;</label>
-                            <label class="btn btn-default form-control disabled"><input type="checkbox" id="randomize" disabled /><span> Rdm.</span></label>
+                            <label class="btn btn-default form-control disabled"><input type="checkbox" id="randomize" disabled {% if active_state.randomize %}checked{% endif %}/><span> Rdm.</span></label>
                         </div>
                         
                         <script>
