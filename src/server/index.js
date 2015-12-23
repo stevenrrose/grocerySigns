@@ -80,7 +80,8 @@ var scraperResultSchema = new Schema({
    id: String,
    seed: Number,
    sentences: [String],
-   images: [String]
+   images: [String],
+   bookmarks: [Number],
 });
 scraperResultSchema.index({provider: 1, id: 1}, { unique: true });
 var ScraperResult = mongoose.model('ScraperResult', scraperResultSchema);
@@ -129,10 +130,7 @@ app.get('/scraper/fetchImage', function(req, res, next) {
 /**
  * /scraper/bookmark
  * 
- * Stores the posted JSON data into the *ScraperResult* collection.
- * 
- * @param {type} param1
- * @param {type} param2
+ * Store the posted JSON data into the *ScraperResult* collection.
  * 
  * @see ScraperResult
  */
@@ -147,6 +145,32 @@ app.post('/scraper/bookmark', function(req, res, next) {
         if (err) return next(err);
         console.log("Saved scraper result to MongoDB", req.body);
         res.location('/' + req.body.provider + '/' + req.body.id);
+        res.send('OK');
+    });
+});
+
+/**
+ * /scraper/bookmarkSeed
+ * 
+ * Bookmark the seed given in the posted JSON data into the 
+ * *ScraperResult.bookmarks* subcollection.
+ * 
+ * @see ScraperResult
+ */
+app.post('/scraper/bookmarkSeed', function(req, res, next) {
+    var provider = req.body.provider;
+    var id = req.body.id;
+    var seed = req.body.seed;
+    
+    // Add seed to the scraped result's bookmark set.
+    ScraperResult.update({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false}, function(err, result) {
+        if (err) return next(err);
+        
+        if (!result) return next();
+
+        if (result.nModified) {
+            console.log("Bookmarked seed to MongoDB", req.body);
+        }
         res.send('OK');
     });
 });
@@ -237,6 +261,7 @@ app.get('/:provider/:id', function(req, res, next) {
             sentences = result.sentences;
         }
         
+        // Build state object.
         var state = {
             provider: provider,
             id: id,
@@ -244,7 +269,34 @@ app.get('/:provider/:id', function(req, res, next) {
             seed: seed,
             sentences: result.sentences,
             images: result.images,
+            bookmarks: result.bookmarks,
         };
+        
+        // Build prev/next links if any.
+        var prev, next;
+        if (result.bookmarks.length) {
+            if (!randomize) {
+                // Next is first entry in bookmarks.
+                next = provider + '/' + id + '?randomize=' + result.bookmarks[0];
+            } else {
+                // Find current seed in bookmarks list.
+                var i = result.bookmarks.indexOf(seed);
+                if (i != -1) {
+                    // Found!
+                    if (i == 0) {
+                        // Prev is non-randomized page.
+                        prev = provider + '/' + id;
+                    } else {
+                        prev = provider + '/' + id + '?randomize=' + result.bookmarks[i-1];
+                    }
+                    if (i < result.bookmarks.length-1) {
+                        next = provider + '/' + id + '?randomize=' + result.bookmarks[i+1];
+                    }
+                }
+            }
+        }
+        
+        // Render & return template.
         res.send(mainPageTpl({
             providers: providers, 
             fields: templates.fields,
@@ -253,6 +305,8 @@ app.get('/:provider/:id', function(req, res, next) {
             active_sentences: sentences,
             active_state: state,
             state: JSON.stringify(state),
+            prev: prev,
+            next: next,
         }));
     });
 });

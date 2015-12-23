@@ -5,6 +5,8 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% if prev %}<link rel="prev" href="{{prev}}">{% endif %}
+    {% if next %}<link rel="next" href="{{next}}">{% endif %}
     <title>GROCERY SIGNS</title>
 
     <!-- jQuery -->
@@ -81,7 +83,7 @@
                         </div>
                         
                         <!-- Random seed -->
-                        <div class="form-group col-sm-3">
+                        <div class="form-group col-sm-3 col-half">
                             <label for="seed" class="control-label">Pull No.</label>
                             <input type="number" class="form-control" id="seed" placeholder="Seed" min="0" max="999999" disabled {% if active_state.randomize %}value="{{active_state.seed}}"{% endif %}>
                         </div>
@@ -93,12 +95,19 @@
                             <label class="control-label hidden-xs">&nbsp;</label>
                             <label class="btn btn-default form-control disabled"><input type="checkbox" id="randomize" disabled {% if active_state.randomize %}checked{% endif %}/><span> Rdm.</span></label>
                         </div>
+                        <div class="form-group col-sm-3 col-half">
+                            <label class="control-label hidden-xs">&nbsp;</label>
+                            <button type="button" id="bookmarkSeed" class="btn btn-default btn-round form-control" disabled>Save <span class="glyphicon glyphicon-star-empty"></span></button>
+                        </div>
                         
                         <script>
                         $("#randomize").change(seedChanged);
                         $("#seed").change(seedChanged).keyup(seedChanged);
                         $("#genSeed").click(function() {
                             $("#seed").val(generateRandomSeed()).change();
+                        });
+                        $("#bookmarkSeed").click(function() {
+                            bookmarkSeed();
                         });
                         </script>
                     </div>

@@ -433,6 +433,35 @@ function bookmarkResult(info) {
     });
 }
 
+/**
+ * Bookmark the given seed in DB.
+ * 
+ * @param seed  Seed value.
+ */
+function bookmarkSeed() {
+    console.log(currentState);
+    if (!currentState || !currentState.id) {
+        // No current state to bookmark.
+        return;
+    }
+    var info = {
+        provider: currentState.provider,
+        id: currentState.id,
+        seed: currentState.seed,
+    };
+    $.ajax({
+        method: "POST",
+        url: 'scraper/bookmarkSeed',
+        processData: false,
+        data: JSON.stringify(info),
+        contentType: 'application/json',
+        error: function(event, jqxhr, settings, thrownError) {
+            console.log("ajaxError", settings, thrownError);
+            displayMessage(false, "Ajax error!", "Ajax error: " + thrownError);
+        }
+    });
+}
+
 
 /*
  *
@@ -460,7 +489,7 @@ function updateState(state, replace) {
     
     $("#autofill-provider option[value='" + state.provider + "']").prop('selected', true);
     $("#randomize").prop('disabled', false).prop('checked', state.randomize).closest('label').removeClass('disabled');
-    $("#seed, #genSeed").prop('disabled', !state.randomize);
+    $("#seed, #genSeed, #bookmarkSeed").prop('disabled', !state.randomize);
     $("#seed").val(state.seed);
     if (typeof(currentState) === 'undefined' || JSON.stringify(state.images) !== JSON.stringify(currentState.images) /* FIXME: ugly but straightforward */) {
         loadImages(state.images);
