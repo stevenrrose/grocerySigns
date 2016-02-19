@@ -314,6 +314,11 @@ function fetchCallback(provider, info) {
             v = normalizeString(v);
             if (v != "") sentences.push(v);
         });
+        // - nonempty review sentences.
+        $.each(info.reviews, function(i, v) {
+            v = normalizeString(v);
+            if (v != "") sentences.push(v);
+        });
 
         var seed = generateRandomSeed();
         
