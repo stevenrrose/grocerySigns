@@ -58,19 +58,16 @@ providers["OkCupid"] = {
                     params: {limit: 1},
                     iterator: "#main_content",
                     data: {
-                        title: {sel: "#basic_info_sn"},
-                        price: {sel: "#ajax_age"},
-                        vendor: {sel: "#ajax_location"},
-                        features: {sel: "#profile_details", scrape: {iterator: "dl", data: function() {
-                            var val = $(this).find("dd").contents(":not(script)").text().trim();
-                            if (val == "") val = $(this).find("dd").text();
-                            if (!val.match(/\w/)) return undefined;
-                            return $(this).find("dt").text().trim() + ": " + val;
+                        title: {sel: ".userinfo2015-basics-username"},
+                        price: {sel: ".userinfo2015-basics-asl-age"},
+                        vendor: {sel: ".userinfo2015-basics-asl-location"},
+                        features: {sel: ".details2015", scrape: {iterator: ".details2015-section", data: function() {
+                            return $(this).text().trim();
                         }}},
                         description: function() {
                             return splitSentences(
                                 $.makeArray(
-                                    $(this).find("#main_column .text").contents()
+                                    $(this).find(".essays2015-essay-content").contents()
                                         .map(function() {
                                             return $(this).text();
                                         })
@@ -79,7 +76,7 @@ providers["OkCupid"] = {
                                 return e.trim() != "";
                             });
                         },
-                        images: {sel: "#profile_thumbs", scrape: {iterator: "img", data: 'src'}},
+                        images: {sel: ".userinfo2015-thumb", scrape: {iterator: "img", data: 'src'}},
                     }
                 }
             },
