@@ -273,11 +273,11 @@ app.get('/:provider/:id', function(req, res, next) {
         };
         
         // Build prev/next links if any.
-        var prev, next;
+        var prevLink, nextLink;
         if (result.bookmarks.length) {
             if (!randomize) {
                 // Next is first entry in bookmarks.
-                next = provider + '/' + id + '?randomize=' + result.bookmarks[0];
+                nextLink = provider + '/' + id + '?randomize=' + result.bookmarks[0];
             } else {
                 // Find current seed in bookmarks list.
                 var i = result.bookmarks.indexOf(seed);
@@ -285,12 +285,12 @@ app.get('/:provider/:id', function(req, res, next) {
                     // Found!
                     if (i == 0) {
                         // Prev is non-randomized page.
-                        prev = provider + '/' + id;
+                        prevLink = provider + '/' + id;
                     } else {
-                        prev = provider + '/' + id + '?randomize=' + result.bookmarks[i-1];
+                        prevLink = provider + '/' + id + '?randomize=' + result.bookmarks[i-1];
                     }
                     if (i < result.bookmarks.length-1) {
-                        next = provider + '/' + id + '?randomize=' + result.bookmarks[i+1];
+                        nextLink = provider + '/' + id + '?randomize=' + result.bookmarks[i+1];
                     }
                 }
             }
@@ -305,8 +305,8 @@ app.get('/:provider/:id', function(req, res, next) {
             active_sentences: sentences,
             active_state: state,
             state: JSON.stringify(state),
-            prev: prev,
-            next: next,
+            prev: prevLink,
+            next: nextLink,
         }));
     });
 });
