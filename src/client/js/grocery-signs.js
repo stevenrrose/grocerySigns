@@ -112,7 +112,7 @@ var scrapedImages = [];
  */
 function loadImages(images) {
     scrapedImages = [];
-    $.each(images, function(i, v) {
+    $.each(images||[], function(i, v) {
         scrapedImages[i] = new ImageFile(fetchImage + "?url=" + encodeURIComponent(v), imageLoaded);
     });
 }
@@ -305,17 +305,17 @@ function fetchCallback(provider, info) {
             normalizeString(info.price),
         ];
         // - nonempty feature bullet items.
-        $.each(info.features, function(i, v) {
+        $.each(info.features||[], function(i, v) {
             v = normalizeString(v);
             if (v != "") sentences.push(v);
         });
         // - nonempty description sentences.
-        $.each(info.description, function(i, v) {
+        $.each(info.description||[], function(i, v) {
             v = normalizeString(v);
             if (v != "") sentences.push(v);
         });
         // - nonempty review sentences.
-        $.each(info.reviews, function(i, v) {
+        $.each(info.reviews||[], function(i, v) {
             v = normalizeString(v);
             if (v != "") sentences.push(v);
         });
