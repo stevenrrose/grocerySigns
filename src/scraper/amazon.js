@@ -67,6 +67,18 @@ providers["Amazon"] = {
                         image: function() {
                             return $(this).closest("#a-page").find("#main-image,#landingImage").attr("src");
                         },
+                        reviews: function() {
+                            return splitSentences(
+                                $.makeArray(
+                                    $(this).parent().find("[id^='rev-dpReview']").find(".a-icon-row .a-text-bold, .a-section")
+                                        .map(function() {
+                                            return $(this).text();
+                                        })
+                                ).join(". ")
+                            ).filter(function(e) {
+                                return e.trim() != "";
+                            });
+                        },
                     }
                 }
             },
