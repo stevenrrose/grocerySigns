@@ -63,6 +63,7 @@
  *  							a regular expression, e.g. /[.,]/ for comma or point.
  *  - mainHeight				Height of main part, sign and decimal parts use the regular
  *  							box height.
+ *  - mainWidth					Fixed width of main part, else all parts scale uniformly.
  *  
  *  
  *  ## Font specifiers ##
@@ -152,9 +153,9 @@ var templates = {
 		padX: 		10, 
 		padY: 		0,
 		fields: {
-			"FIELD01" :	{ left: 140, 			top: 130, 				right: 580, 				bottom: 260 },
+			"FIELD01" : { left: 140, 			top: 130, 				right: 580, 				bottom: 260 },
 			"FIELD02" : { left: 0,  			top: 0,   				right: 612, 				bottom: 50,  	inverted: true },
-			"FIELD03" : { left: 0,				top: 390, 				right: 612, 				bottom: 590, 	maxLength: 10, type: 'price', currency: "$", separator: /[.,]/, mainHeight: 380 },
+			"FIELD03" : { left: 0,				top: 390, 				right: 612, 				bottom: 590, 	maxLength: 10, type: 'price', currency: "$", separator: /[.,]/, mainHeight: 380, mainWidth: 400 },
 			"FIELD04" : { left: 140, 			top: 280, 				right: 560, 				bottom: 390 },
 			"FIELD05" : { left: 470, 			top: 620, 				right: 600,  				bottom: 710,	type: 'image' },
 			"FIELD06" : { left: "FIELD03.left",	top: "FIELD03.bottom", 	right: "FIELD03.currency",  bottom: 700 },

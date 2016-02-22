@@ -435,10 +435,21 @@ function generatePDF(stream, template, fields, images) {
                             var parts = text.split(currency);
                             parts = parts[parts.length-1].split(separator);
                             var main = parts[0];
-                            var decimal = parts[1] || "  ";
+                            var decimal = parts[1];
+                            if (!decimal && main.length >4 ) {
+                                decimal = main.substring(main.length-2);
+                                main = main.substring(0, main.length-2);
+                            }
                             
                             // Compute X scaling of currency+main+decimal parts.
-                            var scaleX = (width - padX) / doc.widthOfString(currency+main+decimal);
+                            var scaleX, scaleXMain;
+                            if (fieldOptions.mainWidth) {
+                                scaleX = (width - padX - fieldOptions.mainWidth) / doc.widthOfString(currency+(decimal||'00'));
+                                scaleXMain = fieldOptions.mainWidth / doc.widthOfString(main);
+                            } else {
+                                scaleX = (width - padX) / doc.widthOfString(currency+main+(decimal||'00'));
+                                scaleXMain = scaleX;
+                            }
                             
                             // Compute Y scaling of currency+decimal and main parts.
                             var scaleY     = (height                  - padY*2) / doc.currentLineHeight(),
@@ -470,15 +481,15 @@ function generatePDF(stream, template, fields, images) {
                                     yMain = top * (fieldOptions.mainHeight - padY*2) / line;
                                 doc.translate(0, yBase-yMain);
                             }
-                            doc.scale(scaleX, scaleYMain, {/*empty block needed*/});
-                            doc.text(main, x, 0);
+                            doc.scale(scaleXMain, scaleYMain, {/*empty block needed*/});
+                            doc.text(main, x*scaleX/scaleXMain, 0);
                             doc.restore();
-                            x += doc.widthOfString(main);
+                            x += doc.widthOfString(main)*scaleXMain/scaleX;
                             fieldCoords[id + ".separator"] = left + x*scaleX;
                             
                             // - Decimal.
                             doc.scale(scaleX, scaleY, {/*empty block needed*/});
-                            doc.text(decimal, x, 0);
+                            doc.text(decimal||'', x, 0);
                         }
                     }
                 }
