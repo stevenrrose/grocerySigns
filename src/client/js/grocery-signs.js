@@ -286,14 +286,14 @@ function populateFields() {
 }
 
 /**
- *  Fetch product callback: display result in fields.
+ *  Fetch item callback: display result in fields.
  *
- *  @param provider     Product provider descriptor.
- *  @param info         Product info.
+ *  @param provider     Item provider descriptor.
+ *  @param info         Item info.
  */
 function fetchCallback(provider, info) {
     if (info.success) {
-        // Success, gather & display product data.
+        // Success, gather & display item data.
         console.log("fetchCallback", info);      
         displayMessage(true, "Success!", provider.name + " ID = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.itemId  + "</a>");
         
@@ -351,7 +351,7 @@ function fetchCallback(provider, info) {
 }
 
 /**
- *  Search for random products and call fetchCallback() upon result.
+ *  Search for random items and call fetchCallback() upon result.
  *  
  *  @param provider     Provider to scrape.
  */
@@ -361,7 +361,7 @@ function scrapeRandom(provider) {
     
     // Generate random search string.
     var str = randomStr(provider.randomSearchStringLength);
-    progress(1, 2, "Searching for " + provider.name + " products matching '" + str + "'...")
+    progress(1, 2, "Searching for " + provider.name + " items matching '" + str + "'...")
     provider.search(str, function(results) {
         if (!results || !results.length) {
             // No or invalid results.
@@ -373,19 +373,19 @@ function scrapeRandom(provider) {
             return;
         }
         
-        // Pick & fetch a random product in the first result page.
+        // Pick & fetch a random item in the first result page.
         var index = Math.floor(Math.random()*results.length);
         var itemId = results[index].itemId;
-        progress(2, 2, "Fetching " + provider.name + " product " + itemId + "...");
+        progress(2, 2, "Fetching " + provider.name + " item " + itemId + "...");
         provider.fetch(itemId, function(info) {fetchCallback(provider, info);});
     });
 }
 
 /**
- * Scrape product given its item ID.
+ * Scrape item given its item ID.
  *  
  *  @param provider     Provider to scrape.
- *  @param itemId       Item ID of the product to scrape.
+ *  @param itemId       Item ID of the item to scrape.
  */
 function scrapeItem(provider, itemId) {
     // Disable interface elements.
@@ -393,7 +393,7 @@ function scrapeItem(provider, itemId) {
     
     // Fetch given item.
     itemId = itemId.trim();
-    progress(1, 1, "Fetching " + provider.name + " product " + itemId + "...");
+    progress(1, 1, "Fetching " + provider.name + " item " + itemId + "...");
     provider.fetch(itemId, function(info) {fetchCallback(provider, info);});
 }
 
