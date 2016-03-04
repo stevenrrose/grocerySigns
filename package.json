@@ -25,5 +25,9 @@
     "request": "^2.65.0",
     "stream-buffers": "^3.0.0",
     "swig": "^1.4.2"
-  }
+  },
+    "scripts": {
+        "start": "node src\/server\/index.js"
+    }
+
 }
