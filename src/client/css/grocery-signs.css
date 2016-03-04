@@ -54,3 +54,14 @@
     text-align: center;
     padding: 0;
 }
+
+/* Template color selectors. */
+.color-black {
+    color: black!important;
+}
+.color-red {
+    color: red!important;
+}
+.color-blue {
+    color: blue!important;
+}

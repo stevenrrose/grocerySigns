@@ -242,12 +242,15 @@ computeActualMaxFieldLengths(randomSeed);
 /**
  *  Generate PDF from input fields for a given template.
  *  
- * @param {object}  stream      Output stream.
- * @param {object}  template    Template descriptor.
- * @param {object}  fields      Field ID => text map.
- * @param {array}   images      List of ImageFile.
+ * @param {object}  stream          Output stream.
+ * @param {object}  template        Template descriptor.
+ * @param {object}  fields          Field ID => text map.
+ * @param {array}   images          List of ImageFile.
+ * @param {object}  globalOptions   Global options.
  */
-function generatePDF(stream, template, fields, images) {
+function generatePDF(stream, template, fields, images, globalOptions) {
+    globalOptions = globalOptions||{};
+    
     // Create PDF document with template size.
     var doc = new PDFDocument({size: [template.width, template.height]});
     doc.pipe(stream);
@@ -290,7 +293,8 @@ function generatePDF(stream, template, fields, images) {
                     align: 'center',
                     currency: "$",
                     separator: ".",
-                }, template, field);
+                    color: 'black',
+                }, globalOptions, template, field);
         
             // Get or retrieve box coordinates.
             var left   = (typeof(field.left)   === 'number') ? field.left   : fieldCoords[field.left],
@@ -335,8 +339,10 @@ function generatePDF(stream, template, fields, images) {
 
             if (field.inverted) {
                 // White on black.
-                doc.rect(0, 0, width, height).fill('black');
+                doc.rect(0, 0, width, height).fill(fieldOptions.color);
                 doc.fill('white');
+            } else {
+                doc.fill(fieldOptions.color);
             }
             
             if (field.background) {

@@ -127,6 +127,10 @@ function loadImages(images) {
  */
 function getFileName(index) {
     var templateName = $("#page-template-" + index).val();
+    var color = $("input[name='page-color-" + index + "']:checked").val();
+    if (color != "") {
+        templateName += "-" + color;
+    }
     
     if (!currentState || !currentState.id) {
         // Manual input.
@@ -151,6 +155,7 @@ function getFileName(index) {
  */
 function downloadPDF(index) {
     var templateName = $("#page-template-" + index).val();
+    var color = $("input[name='page-color-" + index + "']:checked").val();
     var fileName = getFileName(index);
     
     // Output to blob.
@@ -162,7 +167,7 @@ function downloadPDF(index) {
     });
 
     // Generate the PDF.
-    generatePDF(stream, templates[templateName], scrapedTexts, scrapedImages);
+    generatePDF(stream, templates[templateName], scrapedTexts, scrapedImages, {color: color});
 }
 
 /**
@@ -178,6 +183,7 @@ function downloadPDF(index) {
 function refreshFrame(index) {
     var container = $("#page-" + index);
     var templateName = $("#page-template-" + index).val();
+    var color = $("input[name='page-color-" + index + "']:checked").val();
     var fileName = getFileName(index);
     
     // Output to blob.
@@ -196,7 +202,7 @@ function refreshFrame(index) {
     });
 
     // Generate the PDF.
-    generatePDF(stream, templates[templateName], scrapedTexts, scrapedImages);
+    generatePDF(stream, templates[templateName], scrapedTexts, scrapedImages, {color: color});
 }
 
 /**
