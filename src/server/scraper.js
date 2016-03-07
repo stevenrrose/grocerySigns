@@ -31,6 +31,7 @@ include('../scraper/ebay.js');
 include('../scraper/etsy.js');
 include('../scraper/okcupid.js');
 include('../scraper/craigslist.js');
+include('../scraper/upwork.js');
 
 // Exports the above *providers* variable.
 exports.providers = providers;
