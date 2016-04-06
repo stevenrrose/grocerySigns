@@ -36,6 +36,38 @@ app.use(express.static(__dirname + '/../templates'));
 app.use('/scraper', express.static(__dirname + '/../scraper'));
 
 /**
+ * /sitemap.txt
+ * 
+ * Sitemap with all stored scrape pages.
+ */
+app.get('/sitemap.txt', function(req, res) {
+    // All URLs must be full, so get the base URL from the request headers.
+    var baseUrl = req.protocol + '://' + req.get('Host') + '/';
+    
+    // Stream over all stored scrapes.
+    var stream = ScraperResult.find({}, 'provider id').stream();
+    stream.on('error', function(err) {
+        return next();
+    });
+    var first = true;
+    stream.on('data', function(doc) {
+        if (first) {
+            // Write header and include the root URL.
+            res.writeHead(200, {'Content-Type': 'text/plain'});
+            res.write(baseUrl + '\n');
+            first = false;
+        }
+        
+        // Write scrape page URL.
+        res.write(baseUrl + encodeURIComponent(doc.provider) + '/' + encodeURIComponent(doc.id) + '\n');
+    });
+    stream.on('close', function() {
+        // Done.
+        res.end();
+    });
+});
+
+/**
  * /scraper/fetch?url={url}
  * 
  * Simple proxy for scraper, allow client-side code to bypass CORS restriction 
