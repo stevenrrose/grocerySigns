@@ -299,6 +299,15 @@ function populateFields() {
  */
 function fetchCallback(provider, info) {
     if (info.success) {
+        // GA: successful scrape.
+        ga('send', 'event', {
+            eventCategory: 'Scraper',
+            eventAction: 'success',
+            eventLabel: provider.name + " ID=" + info.itemId,
+            'dimension1': provider.name,
+            'metric2': 1
+        });
+        
         // Success, gather & display item data.
         console.log("fetchCallback", info);      
         displayMessage(true, "Success!", provider.name + " ID = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.itemId  + "</a>");
@@ -367,7 +376,18 @@ function scrapeRandom(provider) {
     
     // Generate random search string.
     var str = randomStr(provider.randomSearchStringLength);
-    progress(1, 2, "Searching for " + provider.name + " items matching '" + str + "'...")
+    var label = provider.name + " items matching '" + str + "'";
+    progress(1, 2, "Searching for " + provider.name + " items matching '" + str + "'...");
+
+    // GA: scrape request.
+    ga('send', 'event', {
+        eventCategory: 'Scraper',
+        eventAction: 'request',
+        eventLabel: label,
+        'dimension1': provider.name,
+        'metric1': 1
+    });
+
     provider.search(str, function(results) {
         if (!results || !results.length) {
             // No or invalid results.
@@ -437,9 +457,9 @@ function bookmarkResult(info) {
         processData: false,
         data: JSON.stringify(info),
         contentType: 'application/json',
-        error: function(event, jqxhr, settings, thrownError) {
-            console.log("ajaxError", settings, thrownError);
-            displayMessage(false, "Ajax error!", "Ajax error: " + thrownError);
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log("ajaxError", textStatus, errorThrown);
+            displayMessage(false, "Ajax error!", "Ajax error: " + errorThrown);
         }
     });
 }
@@ -466,9 +486,20 @@ function bookmarkSeed() {
         processData: false,
         data: JSON.stringify(info),
         contentType: 'application/json',
-        error: function(event, jqxhr, settings, thrownError) {
-            console.log("ajaxError", settings, thrownError);
-            displayMessage(false, "Ajax error!", "Ajax error: " + thrownError);
+        success: function(data, textStatus, jqXHR) {
+            // GA: saved permutation.
+            var label = 
+            ga('send', 'event', {
+                eventCategory: 'Bookmark',
+                eventAction: 'saved',
+                eventLabel: currentState.provider + " ID=" + currentState.id + " seed=" + currentState.seed,
+                'dimension1': currentState.name,
+                'metric3': 1
+            });
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log("ajaxError", textStatus, errorThrown);
+            displayMessage(false, "Ajax error!", "Ajax error: " + errorThrown);
         }
     });
 }
