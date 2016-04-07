@@ -44,5 +44,6 @@ exports.fields = Object.keys(fieldNames);
 // Include and export the PDF generation functions.
 global.PDFDocument = require('pdfkit');
 include('../templates/generate.js');
+exports.generateRandomSeed = global.generateRandomSeed;
 exports.generatePDF = global.generatePDF;
 exports.computeActualMaxFieldLengths = global.computeActualMaxFieldLengths;

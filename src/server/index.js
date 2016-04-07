@@ -117,7 +117,8 @@ var scraperResultSchema = new Schema({
    images: [String],
    bookmarks: [Number],
 });
-scraperResultSchema.index({provider: 1, id: 1}, { unique: true });
+scraperResultSchema.index({provider: 1, id: 1}, { unique: true});
+scraperResultSchema.index({seed: 1});
 var ScraperResult = mongoose.model('ScraperResult', scraperResultSchema);
 
 /**
@@ -197,7 +198,7 @@ app.post('/scraper/bookmarkSeed', function(req, res, next) {
     var seed = req.body.seed;
     
     // Add seed to the scraped result's bookmark set.
-    ScraperResult.update({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false}, function(err, result) {
+    ScraperResult.findOneAndUpdate({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false}, function(err, result) {
         if (err) return next(err);
         
         if (!result) return next();
@@ -222,7 +223,6 @@ var mainPageTpl = swig.compileFile('../client/grocery-signs.html');
  * Application root.
  */
 app.get('/', function(req, res) {
-//  res.sendFile('/client/grocery-signs.html', {root: __dirname + '/..'});
     res.send(mainPageTpl({
         providers: providers, 
         fields: templates.fields,
@@ -346,7 +346,7 @@ app.get('/:provider/:id', function(req, res, next) {
 });
 
 /**
- * /:provider/:id/:template.pdf?randomize={seed}
+ * /:provider/:id/:template.pdf?randomize={seed}&color={color}
  * 
  * Permalinks to PDF (generated on the fly), crawlable from the HTML page.
  * 
@@ -363,6 +363,10 @@ app.get('/:provider/:id/:template.pdf', function(req, res, next) {
         randomize = true;
         seed = parseInt(req.query.randomize);
         if (isNaN(seed)) return next('Invalid seed');
+    }
+    var options = {}
+    if (typeof(req.query.color) !== 'undefined') {
+        options.color = req.query.color;
     }
     
     if (!providers.find(function(e) {return (e == provider);})) {
@@ -405,7 +409,7 @@ app.get('/:provider/:id/:template.pdf', function(req, res, next) {
         
         if (result.images.length == 0) {
             // No image.
-            generatePDF(res, templates.templates[template], fields, []);
+            generatePDF(res, templates.templates[template], fields, [], options);
             return;
         }
         // Fetch all image URLs from DB.
@@ -422,7 +426,7 @@ app.get('/:provider/:id/:template.pdf', function(req, res, next) {
                     images.push(imagesByUrl[url]);
                 }
             }
-            generatePDF(res, templates.templates[template], fields, images);
+            generatePDF(res, templates.templates[template], fields, images, options);
         });
     });
 });
@@ -522,6 +526,69 @@ app.get('/:provider/:id/:template.png', function(req, res, next) {
             generatePDF(stream, templates.templates[template], sentences, images);
         });
     });
+});
+
+/**
+ * randomPageTpl
+ * 
+ * Template file for main HTML page.
+ */
+var randomPageTpl = swig.compileFile('../client/random.html');
+
+/**
+ * /random
+ * 
+ * Random page viewer.
+ */
+app.get('/random', function(req, res) {
+    res.send(randomPageTpl());
+});
+
+/**
+ * /random.pdf
+ * 
+ * Pick & redirect to random page.
+ */
+app.get('/random.pdf', function(req, res, next) {
+    // Try to find scrape with nonempty bookmark list.
+    var find = function() {
+        // Random seed value used to select the scrape.
+        var seed = generateRandomSeed();
+        
+        ScraperResult.findOne({seed: {$gte: seed}, bookmarks: {$not: {$size: 0}}}, "provider id bookmarks", function(err, result) {
+            if (err) return next(err);
+
+            if (!result) {
+                // Try again.
+                find();
+                return;
+            }
+            
+            // Found, pick a random bookmarked seed.
+            var params = {}
+            params.provider = result.provider;
+            params.id = result.id;
+            params.seed = result.bookmarks[Math.floor(Math.random() * result.bookmarks.length)];
+            
+            // Choose random template and color.
+            var templateNames = Object.keys(templates.templates);
+            params.template = templateNames[Math.floor(Math.random() * templateNames.length)];
+            var colors = ["black", "red", "blue"];
+            params.color = colors[Math.floor(Math.random() * colors.length)];
+            
+            // Redirect to PDF permalink.
+            res.writeHead(302, {
+                'Location': 
+                      '/' + encodeURIComponent(params.provider) 
+                    + '/' + encodeURIComponent(params.id)
+                    + '/' + encodeURIComponent(params.template) + '.pdf'
+                    + '?randomize=' + params.seed
+                    + '&color=' + params.color
+            });
+            res.end();
+        });
+    };
+    find();
 });
 
 /**
