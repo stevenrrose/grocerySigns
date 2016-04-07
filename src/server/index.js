@@ -555,9 +555,7 @@ app.get('/random.pdf', function(req, res, next) {
         // Random seed value used to select the scrape.
         var seed = generateRandomSeed();
         
-		$nor: [ {bookmarks: {$exists: false}} ,{bookmarks: {$size: 0}} ] })
-
-        ScraperResult.findOne({seed: {$gte: seed}, $nor: [ {bookmarks: {$exists: false}} ,{bookmarks: {$size: 0}} ]}, "provider id bookmarks", function(err, result) {
+        ScraperResult.findOne({seed: {$gte: seed}, $nor: [ {bookmarks: {$exists: false}}, {bookmarks: {$size: 0}} ]}, "provider id bookmarks", function(err, result) {
             if (err) return next(err);
 
             if (!result) {
