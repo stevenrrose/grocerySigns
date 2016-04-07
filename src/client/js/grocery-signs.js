@@ -56,30 +56,37 @@ PDFJS.disableWorker = true;
  *  
  *  @param url          URL of PDF to render (supports blob and data URIs).
  *  @param container    Canvas container.
+ *  @param scale        Scale factor.
  */
-function renderPDF(url, container) {
+function renderPDF(url, container, scale) {
     PDFJS.getDocument(url).then(function(pdfDoc) {
         /* Only render the first page. */
         pdfDoc.getPage(1).then(function(page) {
             /* Compute ideal scaling factor: twice the page width for optimal subsampling. */
             var pageWidth = page.getViewport(1).width;
-            var scale = 2*$(container).width()/pageWidth;
+            scale = scale || 2;
+            scale *= $(container).width()/pageWidth;
             
             /* Create viewport and canvas. */
             var viewport = page.getViewport(scale);
             var canvas = document.createElement('canvas');
             canvas.height = viewport.height;
             canvas.width = viewport.width;
-            $(container).empty().append(canvas);
+            //$(container).empty().append(canvas);
 
             /* Render page. */
             page.render({
+                intent: print,
                 canvasContext: canvas.getContext('2d'),
                 viewport: viewport
+            }).then(function() {
+//              $(container).empty().append(canvas);
+                var image = $("<img></img>").attr("src", canvas.toDataURL("image/png"));
+                $(container).empty().append(image);
             });
         });
     });
-}   
+}
 
 
 /*
