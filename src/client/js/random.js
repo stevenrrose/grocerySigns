@@ -24,7 +24,29 @@ function appendPages() {
         $pages.append($("<div class='page-container col-xs-12 col-sm-6'></div>")
                 .append($("<div class='thumbnail'></div>").append(page))
         );
-        renderPDF("random.pdf", page, 1);
+        
+        // Don't render the remote URL directly, as we need access to the X-Scrape-URL response header,
+        // used to link the rendered pages to the main app's matching scrape page. We also need the data
+        // as a blob and not as a plain string for better performance, and since jQuery doesn't support 
+        // that, then use plain XHR instead of $.ajax().
+        // renderPDF("random.pdf", page, 1);
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'random.pdf', true);
+        xhr.responseType = 'blob';
+        xhr.targetPage = page; // Needed for some reason; using the page var directly doesn't work in the callback.
+        xhr.onload = function(e) {
+            if (this.status == 200) {
+                // The scrape page is passed by the server as the X-Scrape-URL response header.
+                var scrapeURL = this.getResponseHeader('X-Scrape-URL');
+                
+                // Pass the blob URL to PDF.js.
+                var blob = this.response;
+                var url = window.URL.createObjectURL(blob);
+                
+                renderPDF(url, this.targetPage, {scale: 1, url: scrapeURL});
+            }
+        };
+        xhr.send();
     }
     
     // Move spinning icon to end of viewport.

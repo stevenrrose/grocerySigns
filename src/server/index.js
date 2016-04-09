@@ -407,6 +407,15 @@ app.get('/:provider/:id/:template.pdf', function(req, res, next) {
         
         templates.computeActualMaxFieldLengths(seed);
         
+        // Write header with canonical scrape URL.
+        var scrapeURL = 
+              '/' + encodeURIComponent(provider) 
+            + '/' + encodeURIComponent(id);
+        if (randomize) {
+            scrapeURL += '?randomize=' + seed;
+        }
+        res.setHeader('X-Scrape-URL', scrapeURL);
+        
         if (result.images.length == 0) {
             // No image.
             generatePDF(res, templates.templates[template], fields, [], options);
@@ -577,13 +586,15 @@ app.get('/random.pdf', function(req, res, next) {
             params.color = colors[Math.floor(Math.random() * colors.length)];
             
             // Redirect to PDF permalink.
-            res.writeHead(302, {
-                'Location': 
+            var pdfURL = 
                       '/' + encodeURIComponent(params.provider) 
                     + '/' + encodeURIComponent(params.id)
                     + '/' + encodeURIComponent(params.template) + '.pdf'
                     + '?randomize=' + params.seed
-                    + '&color=' + params.color
+                    + '&color=' + params.color;
+            res.writeHead(307, {
+                'Location': pdfURL,
+                'Pragma': 'no-cache'
             });
             res.end();
         });
