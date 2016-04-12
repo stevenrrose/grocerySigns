@@ -31,7 +31,7 @@ function appendPages() {
         // that, then use plain XHR instead of $.ajax().
         // renderPDF("random.pdf", page, 1);
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'random.pdf', true);
+        xhr.open('GET', 'random.pdf?_='+Math.random(), true);
         xhr.responseType = 'blob';
         xhr.targetPage = page; // Needed for some reason; using the page var directly doesn't work in the callback.
         xhr.onload = function(e) {
