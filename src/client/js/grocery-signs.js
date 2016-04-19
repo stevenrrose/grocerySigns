@@ -578,3 +578,10 @@ function updateState(state, replace) {
 window.onpopstate = function() {
     updateState(history.state, true);
 };
+
+
+$(document).ajaxError(function(event, jqXHR, ajaxSetting, thrownError) {
+    console.log("ajaxError", thrownError);
+    displayMessage(false, "Ajax error!", "Ajax error: " + thrownError);
+    enableInterface(true);
+});

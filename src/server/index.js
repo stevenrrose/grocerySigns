@@ -87,7 +87,7 @@ app.get('/scraper/fetch', function(req, res, next) {
         }
     }
     console.log("Rejecting URL " + url);
-    return next();
+    return res.status(403).end();
 });
 
 /**
@@ -169,7 +169,7 @@ app.get('/scraper/fetchImage', function(req, res, next) {
 
             if (!result || !result.images || result.images.indexOf(url) == -1) {
                 console.log("Rejecting image " + url);
-                return next();
+                return res.status(403).end();
             }
         
             // Image belongs to scraper result, fetch & store remote data.
