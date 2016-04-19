@@ -8,6 +8,9 @@
 
 providers["Amazon"] = {
     name: "Amazon",
+    
+    /** Allowed URL pattern. */
+    urlPattern: /^http:\/\/www\.amazon\.com\/(s\/ref=nb_sb_noss_2\?field-keywords=.+|dp\/[^/]+)$/,
 
     /** Length of random string used to search for products. */
     randomSearchStringLength: 4,

@@ -9,6 +9,9 @@
 providers["Craigslist"] = {
     name: "Craigslist",
     
+    /** Allowed URL pattern. */
+    urlPattern: /^https:\/\/\w+\.craigslist\.org\/(\/search\/\w+(\?s=\d+)?|.+\.html)$/,
+
     /** We don't need random strings as CL already provides us with result lists. */
     randomSearchStringLength: 0,
     
@@ -40,8 +43,8 @@ providers["Craigslist"] = {
             function(data) {
                 // Pick a random page.
                 var total = data[0][0].total;
-                var i = Math.floor(Math.random()*total)
-                var url = "https://newyork.craigslist.org/search/" + what + "?s=";
+                var i = Math.floor(Math.random()*total);
+                var url = "https://newyork.craigslist.org/search/" + what + "?s=" + i;
                 console.log(url);
                 artoo.ajaxSpider(
                     [{url: fetchUrl, data: {url: url}}],

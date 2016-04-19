@@ -75,8 +75,19 @@ app.get('/sitemap.txt', function(req, res) {
  * 
  * @param url URL of page to retrieve
  */
-app.get('/scraper/fetch', function(req, res) {
-    request(req.query.url).pipe(res);
+app.get('/scraper/fetch', function(req, res, next) {
+    // Validate provided URL against each provider's URL pattern.
+    var url = req.query.url;
+    console.log(url);
+    for (var p in scraper.providers) {
+        if (url.match(scraper.providers[p].urlPattern)) {
+            // Matched! Fetch remote data.
+            request(req.query.url).pipe(res);
+            return;
+        }
+    }
+    console.log("Rejecting URL " + url);
+    return next();
 });
 
 /**
@@ -156,9 +167,10 @@ app.get('/scraper/fetchImage', function(req, res, next) {
         ScraperResult.findOne({provider: provider, id: id}, function(err, result) {
             if (err) return next(err);
 
-            if (!result) return next();
-
-            if (!result.images || result.images.indexOf(url) == -1) return next();
+            if (!result || !result.images || result.images.indexOf(url) == -1) {
+                console.log("Rejecting image " + url);
+                return next();
+            }
         
             // Image belongs to scraper result, fetch & store remote data.
             request({url: url, encoding: 'binary'}, function (error, response, body) {

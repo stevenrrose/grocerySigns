@@ -9,6 +9,9 @@
 providers["eBay"] = {
     name: "eBay",
     
+    /** Allowed URL pattern. */
+    urlPattern: /^http:\/\/www\.ebay\.com\/(sch\/i.html\?_nkw=|itm\/)\w+$/,
+
     /** Length of random string used to search for products. */
     randomSearchStringLength: 4,
     

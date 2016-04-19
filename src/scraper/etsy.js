@@ -9,6 +9,9 @@
 providers["Etsy"] = {
     name: "Etsy",
     
+    /** Allowed URL pattern. */
+    urlPattern: /^https:\/\/www\.etsy\.com\/(search\?q=|listing\/\w+(\/stubs\/feedback)?)$/,
+
     /** Length of random string used to search for products. */
     randomSearchStringLength: 3,
     
@@ -45,7 +48,7 @@ providers["Etsy"] = {
      */ 
     fetch: function(itemId, callback) {
         console.log("fetch", itemId);
-        var url = "http://www.etsy.com/listing/" + itemId;
+        var url = "https://www.etsy.com/listing/" + itemId;
         artoo.ajaxSpider(
             [{url: fetchUrl, data: {url: url}}, {url: fetchUrl, data: {url: url+'/stubs/feedback'}}],
             {
