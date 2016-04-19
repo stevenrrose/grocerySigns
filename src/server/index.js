@@ -136,29 +136,45 @@ var ScraperResult = mongoose.model('ScraperResult', scraperResultSchema);
  */
 app.get('/scraper/fetchImage', function(req, res, next) {
     var url = req.query.url;
+    var provider = req.query.provider;
+    var id = req.query.id;
+    
+    // Try to find existing image from its URL.
     Image.findOne({url: url}, function(err, image) {
         if (err) return next(err);
         
         if (image) {
+            // Found!
             console.log("Found cached image", url, image.type, image.data.length);
             res.contentType(image.type);
             res.send(image.data);
             return;
         }
         
-        request({url: url, encoding: 'binary'}, function (error, response, body) {
-            if (!error && response.statusCode == 200) {
-                console.log("Got remote image", url);
-                var image = new Image;
-                image.url = url;
-                image.type = response.headers['content-type'];
-                image.data = new Buffer(body, 'binary');
-                image.save(function (err) {
-                    if (err) return next(err);
-                    console.log("Saved image to MongoDB", url);
-                });
-            }
-        }).pipe(res);
+        // Ensure that the requested image belongs to the given provider/id scraper result,
+        // to prevent abuse.
+        ScraperResult.findOne({provider: provider, id: id}, function(err, result) {
+            if (err) return next(err);
+
+            if (!result) return next();
+
+            if (!result.images || result.images.indexOf(url) == -1) return next();
+        
+            // Image belongs to scraper result, fetch & store remote data.
+            request({url: url, encoding: 'binary'}, function (error, response, body) {
+                if (!error && response.statusCode == 200) {
+                    console.log("Got remote image", url);
+                    var image = new Image;
+                    image.url = url;
+                    image.type = response.headers['content-type'];
+                    image.data = new Buffer(body, 'binary');
+                    image.save(function (err) {
+                        if (err) return next(err);
+                        console.log("Saved image to MongoDB", url);
+                    });
+                }
+            }).pipe(res);
+        });
     });
 });
 

@@ -119,14 +119,19 @@ var scrapedImages = [];
 /**
  * Deferred loading of images.
  * 
- * @param {array} images    list of image URLs
+ * @param {Object} state    State object with provider/id/images fields.
  * 
  * @see ImageFile
  */
-function loadImages(images) {
+function loadImages(state) {
     scrapedImages = [];
-    $.each(images||[], function(i, v) {
-        scrapedImages[i] = new ImageFile(fetchImage + "?url=" + encodeURIComponent(v), imageLoaded);
+    $.each(state.images||[], function(i, v) {
+        scrapedImages[i] = new ImageFile(
+                fetchImage 
+                + "?url=" + encodeURIComponent(v) 
+                + "&provider=" + encodeURIComponent(state.provider)
+                + "&id=" + encodeURIComponent(state.id), 
+                imageLoaded);
     });
 }
 
@@ -547,7 +552,7 @@ function updateState(state, replace) {
     $("#seed, #genSeed, #bookmarkSeed").prop('disabled', !state.randomize);
     $("#seed").val(state.seed);
     if (typeof(currentState) === 'undefined' || JSON.stringify(state.images) !== JSON.stringify(currentState.images) /* FIXME: ugly but straightforward */) {
-        loadImages(state.images);
+        loadImages(state);
     }
     $(".FIELD").prop('readonly', true);
     
