@@ -199,11 +199,38 @@ app.get('/scraper/fetchImage', function(req, res, next) {
  */
 app.post('/scraper/bookmark', function(req, res, next) {
     var result = new ScraperResult;
-    result.provider = req.body.provider;
-    result.id = req.body.id;
-    result.seed = req.body.seed;
-    result.sentences = req.body.sentences;
-    result.images = req.body.images;
+
+    // Basic validation.
+    try {
+        result.provider = req.body.provider;
+        if (!scraper.providers[result.provider]) throw "Unknown provider";
+
+        result.id = req.body.id;
+        if (result.id.length > 100) throw "ID too long";
+
+        result.seed = parseInt(req.body.seed);
+        if (isNaN(result.seed)) throw "Invalid seed";
+
+        result.sentences = [];
+        if (req.body.sentences) {
+            for (sentence of req.body.sentences) {
+                if (sentence) result.sentences.push(sentence.substr(0,100));
+                if (result.sentences.length > 50) break;
+            }
+        }
+            
+        result.images = [];
+        if (req.body.images) {
+            for (image of req.body.images) {
+                if (image) result.images.push(image);
+                if (result.images.length > 5) break;
+            }
+        }
+    } catch (e) {
+        console.log(e);
+        return res.status(400).end();
+    }
+        
     result.save(function (err) {
         if (err) return next(err);
         console.log("Saved scraper result to MongoDB", req.body);
@@ -224,11 +251,18 @@ app.post('/scraper/bookmarkSeed', function(req, res, next) {
     var provider = req.body.provider;
     var id = req.body.id;
     var seed = req.body.seed;
-    
+
+    // Basic validation.
+    try {
+        if (isNaN(seed)) throw "Invalid seed";
+    } catch (e) {
+        return res.status(400).end();
+    }
+
     // Add seed to the scraped result's bookmark set.
     ScraperResult.findOneAndUpdate({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false}, function(err, result) {
         if (err) return next(err);
-        
+
         if (!result) return next();
 
         if (result.nModified) {
