@@ -10,7 +10,7 @@ providers["OkCupid"] = {
     name: "OkCupid",
     
     /** Allowed URL pattern. */
-    urlPattern: /^http:\/\/(www\.google\.com\/search\?q=site:www\.okcupid\.com\/profile\+|www\.okcupid\.com\/profile\/)\w+$/,
+    urlPattern: /^http:\/\/(www\.google\.com\/search\?q=site:www\.okcupid\.com\/profile\+\w+|www\.okcupid\.com\/profile\/[^/]+)$/,
 
     /** Length of random string used to search for profiles. */
     randomSearchStringLength: 2,

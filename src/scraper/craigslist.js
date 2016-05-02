@@ -10,7 +10,7 @@ providers["Craigslist"] = {
     name: "Craigslist",
     
     /** Allowed URL pattern. */
-    urlPattern: /^https:\/\/\w+\.craigslist\.org\/(\/search\/\w+(\?s=\d+)?|.+\.html)$/,
+    urlPattern: /^https:\/\/\w+\.craigslist\.org\/(search\/\w+(\?s=\d+)?|.+\.html)$/,
 
     /** We don't need random strings as CL already provides us with result lists. */
     randomSearchStringLength: 0,

@@ -10,7 +10,7 @@ providers["UpWork"] = {
     name: "UpWork",
     
     /** Allowed URL pattern. */
-    urlPattern: /^https:\/\/www\.upwork\.com\/o\/profiles\/(browse\/?page=\d+|users\/\w+\/)$/,
+    urlPattern: /^https:\/\/www\.upwork\.com\/o\/profiles\/(browse\/\?page=\d+|users\/[^/]+\/)$/,
 
     /** We don't need random strings as UpWork already provides us with result lists. */
     randomSearchStringLength: 0,

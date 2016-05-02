@@ -10,7 +10,7 @@ providers["Etsy"] = {
     name: "Etsy",
     
     /** Allowed URL pattern. */
-    urlPattern: /^https:\/\/www\.etsy\.com\/(search\?q=|listing\/\w+(\/stubs\/feedback)?)$/,
+    urlPattern: /^https:\/\/www\.etsy\.com\/(search\?q=\w+|listing\/[^/]+(\/stubs\/feedback)?)$/,
 
     /** Length of random string used to search for products. */
     randomSearchStringLength: 3,
