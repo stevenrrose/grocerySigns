@@ -210,6 +210,7 @@ app.post('/scraper/bookmark', function(req, res, next) {
  * *ScraperResult.bookmarks* subcollection.
  * 
  * @see ScraperResult
+ * @see Bookmark
  */
 app.post('/scraper/bookmarkSeed', function(req, res, next) {
     var provider = req.body.provider;
@@ -241,7 +242,7 @@ app.post('/scraper/bookmarkSeed', function(req, res, next) {
     if (typeof(seed) !== 'undefined') {
         // Add seed to the scraped result's bookmark set.
         ScraperResult.findOneAndUpdate({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false}, function(err, result) {
-        if (err) return next(err);
+            if (err) return next(err);
 
             if (!result) return next();
 
@@ -253,6 +254,39 @@ app.post('/scraper/bookmarkSeed', function(req, res, next) {
     } else {
         res.send('OK');
     }
+});
+
+/**
+ * /history?since={date}
+ * 
+ * Return latest entries in the bookmarks table, optionnally since the given
+ * date (excluded), most recent first.
+ * 
+ * @see Bookmark
+ * @see /scraper/bookmarkSeed
+ */
+app.get('/history', function(req, res, next) {
+    // Basic validation.
+    var since = req.query.since;
+    try {
+        if (typeof(since) !== 'undefined' && isNaN(Date.parse(since))) throw "Unrecognized date format";
+    } catch (e) {
+        console.log(e);
+        return res.status(400).end();
+    }
+    
+    var query = Bookmark.find()
+            .select({_id: 0, date: 1, caller: 1, provider: 1, id: 1, seed: 1})
+            .limit(100)
+            .sort({date: -1});
+    if (since) {
+        query.where({date: {$gt: since}});
+    }
+    query.exec(function(err, bookmarks) {
+        if (err) return next(err);
+
+        res.send(bookmarks);
+    });
 });
 
 /**
