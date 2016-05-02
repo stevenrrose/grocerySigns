@@ -4,13 +4,19 @@ var request = require('request');
 var express = require('express');
 var bodyParser = require('body-parser');
 var swig = require('swig');
-var mongoose = require('mongoose');
-
-var Schema = mongoose.Schema;
-mongoose.connect('mongodb://localhost/grocery-signs');
 
 var scraper = require('./scraper.js');
 var templates = require('./templates.js');
+
+/**
+ * 
+ * DB stuff.
+ * 
+ */
+var db = require('./db.js');
+var Image = db.Image;
+var ScraperResult = db.ScraperResult;
+var Bookmark = db.Bookmark;
 
 /**
  * providers
@@ -89,48 +95,6 @@ app.get('/scraper/fetch', function(req, res, next) {
     console.log("Rejecting URL " + url);
     return res.status(403).end();
 });
-
-/**
- * Image
- * 
- * Mongoose model for downloaded image data.
- * 
- * @property url URL of image (unique key)
- * @property type MIME type of image
- * @property data Binary image data
- * 
- * @see /scraper/fetchImage?url={url}
- */
-var imageSchema = new Schema({
-   url: { type: String, index: { unique: true }},
-   type: String,
-   data: Buffer
-});
-var Image = mongoose.model('Image', imageSchema);
-
-/**
- * ScraperResult
- * 
- * Mongoose model for scraper results.
- * 
- * @property provider data provider Id (e.g. 'OkCupid')
- * @property id provider-local page ID (e.g. 'hotgirl90')
- * @property sentences array of strings from scraped page
- * @property images array of image URLs from scraped page
- * 
- * @see /scraper/bookmark
- */
-var scraperResultSchema = new Schema({
-   provider: String,
-   id: String,
-   seed: Number,
-   sentences: [String],
-   images: [String],
-   bookmarks: [Number],
-});
-scraperResultSchema.index({provider: 1, id: 1}, { unique: true});
-scraperResultSchema.index({seed: 1});
-var ScraperResult = mongoose.model('ScraperResult', scraperResultSchema);
 
 /**
  * /scraper/fetchImage?url={url}
@@ -251,25 +215,44 @@ app.post('/scraper/bookmarkSeed', function(req, res, next) {
     var provider = req.body.provider;
     var id = req.body.id;
     var seed = req.body.seed;
-
+    var caller = req.get('X-Scrape-App');
+    
     // Basic validation.
     try {
-        if (isNaN(seed)) throw "Invalid seed";
+        if (typeof(seed) !== 'undefined' && isNaN(seed)) throw "Invalid seed";
     } catch (e) {
         return res.status(400).end();
     }
-
-    // Add seed to the scraped result's bookmark set.
-    ScraperResult.findOneAndUpdate({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false}, function(err, result) {
+    
+    // Add to bookmark table.
+    var bookmark = new Bookmark();
+    bookmark.caller = caller;
+    bookmark.provider = provider;
+    bookmark.id = id;
+    bookmark.seed = seed;
+    bookmark.save(function (err) {
+        if (err) {
+            console.error("Error while saving bookmark to MongoDB");
+        } else {
+            console.log("Bookmark saved to MongoDB by caller app " + caller);
+        }
+    });
+    
+    if (typeof(seed) !== 'undefined') {
+        // Add seed to the scraped result's bookmark set.
+        ScraperResult.findOneAndUpdate({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false}, function(err, result) {
         if (err) return next(err);
 
-        if (!result) return next();
+            if (!result) return next();
 
-        if (result.nModified) {
-            console.log("Bookmarked seed to MongoDB", req.body);
-        }
+            if (result.nModified) {
+                console.log("Bookmark added to scraper result in MongoDB", req.body);
+            }
+            res.send('OK');
+        });
+    } else {
         res.send('OK');
-    });
+    }
 });
 
 /**

@@ -500,6 +500,7 @@ function bookmarkSeed() {
     };
     $.ajax({
         method: "POST",
+        headers: {"X-Scrape-App": "Web"},
         url: 'scraper/bookmarkSeed',
         processData: false,
         data: JSON.stringify(info),
