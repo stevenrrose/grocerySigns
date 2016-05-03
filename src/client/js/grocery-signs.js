@@ -330,29 +330,7 @@ function fetchCallback(provider, info) {
         console.log("fetchCallback", info);      
         displayMessage(true, "Success!", provider.name + " ID = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.itemId  + "</a>");
         
-        // Build sentences to populate fields with.
-        // - title, vendor and price (even empty to ensure predictable order).
-        var sentences = [
-            normalizeString(info.title), 
-            normalizeString(info.vendor), 
-            normalizeString(info.price),
-        ];
-        // - nonempty feature bullet items.
-        $.each(info.features||[], function(i, v) {
-            v = normalizeString(v);
-            if (v != "") sentences.push(v);
-        });
-        // - nonempty description sentences.
-        $.each(info.description||[], function(i, v) {
-            v = normalizeString(v);
-            if (v != "") sentences.push(v);
-        });
-        // - nonempty review sentences.
-        $.each(info.reviews||[], function(i, v) {
-            v = normalizeString(v);
-            if (v != "") sentences.push(v);
-        });
-
+        var sentences = processSentences(info);
         var seed = generateRandomSeed();
         
         // Bookmark result.
@@ -361,7 +339,7 @@ function fetchCallback(provider, info) {
             id: info.itemId,
             seed: seed,
             sentences: sentences,
-            images: info.images,
+            images: info.images
         });
         
         // Update app state with new info.
@@ -371,7 +349,7 @@ function fetchCallback(provider, info) {
             randomize: $("#randomize").prop('checked'),
             seed: seed,
             sentences: sentences,
-            images: info.images,
+            images: info.images
         });
     } else {
         // Failure.
@@ -381,6 +359,40 @@ function fetchCallback(provider, info) {
 
     // Done!
     enableInterface(true);
+}
+
+/**
+ * Build sentences to populate fields with.
+ * 
+ * @param {type} info scrape result
+ * 
+ * @returns {processSentences.sentences|Array} array of normalized sentences
+ */
+function processSentences(info) {
+    // Build sentences to populate fields with.
+    // - title, vendor and price (even empty to ensure predictable order).
+    var sentences = [
+        normalizeString(info.title), 
+        normalizeString(info.vendor), 
+        normalizeString(info.price),
+    ];
+    // - nonempty feature bullet items.
+    $.each(info.features||[], function(i, v) {
+        v = normalizeString(v);
+        if (v != "") sentences.push(v);
+    });
+    // - nonempty description sentences.
+    $.each(info.description||[], function(i, v) {
+        v = normalizeString(v);
+        if (v != "") sentences.push(v);
+    });
+    // - nonempty review sentences.
+    $.each(info.reviews||[], function(i, v) {
+        v = normalizeString(v);
+        if (v != "") sentences.push(v);
+    });
+    
+    return sentences;
 }
 
 /**

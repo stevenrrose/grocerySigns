@@ -619,7 +619,7 @@ app.get('/:provider/:id/:template.png', function(req, res, next) {
 /**
  * randomPageTpl
  * 
- * Template file for main HTML page.
+ * Template file for /random HTML page.
  */
 var randomPageTpl = swig.compileFile('../client/random.html');
 
@@ -679,6 +679,24 @@ app.get('/random.pdf', function(req, res, next) {
         });
     };
     find();
+});
+
+/**
+ * piScriptPageTpl
+ * 
+ * Template file for /pi-script HTML page.
+ */
+var piScriptPageTpl = swig.compileFile('../client/pi-script.html');
+
+/**
+ * /pi-script
+ * 
+ * PI script page viewer.
+ */
+app.get('/pi-script', function(req, res) {
+    res.send(piScriptPageTpl({
+        templateNames: JSON.stringify(Object.keys(templates.templates)),
+    }));
 });
 
 /**
