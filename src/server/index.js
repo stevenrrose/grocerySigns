@@ -257,7 +257,7 @@ app.post('/scraper/bookmarkSeed', function(req, res, next) {
 });
 
 /**
- * /history?since={date}
+ * /history?since={date}&caller={string}
  * 
  * Return latest entries in the bookmarks table, optionnally since the given
  * date (excluded), most recent first.
@@ -275,12 +275,17 @@ app.get('/history', function(req, res, next) {
         return res.status(400).end();
     }
     
+    var caller = req.query.caller;
+    
     var query = Bookmark.find()
             .select({_id: 0, date: 1, caller: 1, provider: 1, id: 1, seed: 1})
             .limit(100)
             .sort({date: -1});
     if (since) {
         query.where({date: {$gt: since}});
+    }
+    if (caller) {
+        query.where({caller: caller});
     }
     query.exec(function(err, bookmarks) {
         if (err) return next(err);

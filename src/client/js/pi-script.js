@@ -18,9 +18,9 @@ function refreshPages() {
     
     // Get new pages from history.
     var xhr = new XMLHttpRequest();
-    var url = 'history';
+    var url = 'history?caller=Pi';
     if (latestPage) {
-        url += '?since=' + latestPage;
+        url += '&since=' + latestPage;
     }
     xhr.open('GET', url, true);
     xhr.responseType = 'json';
