@@ -687,19 +687,19 @@ app.get('/random.pdf', function(req, res, next) {
 });
 
 /**
- * piScriptPageTpl
+ * piFeedPageTpl
  * 
- * Template file for /pi-script HTML page.
+ * Template file for /pi-feed HTML page.
  */
-var piScriptPageTpl = swig.compileFile('../client/pi-script.html');
+var piFeedPageTpl = swig.compileFile('../client/pi-feed.html');
 
 /**
- * /pi-script
+ * /pi-feed
  * 
- * PI script page viewer.
+ * PI feed page viewer.
  */
-app.get('/pi-script', function(req, res) {
-    res.send(piScriptPageTpl({
+app.get('/pi-feed', function(req, res) {
+    res.send(piFeedPageTpl({
         templateNames: JSON.stringify(Object.keys(templates.templates)),
     }));
 });
