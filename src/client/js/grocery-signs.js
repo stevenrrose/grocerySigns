@@ -331,6 +331,7 @@ function fetchCallback(provider, info) {
         displayMessage(true, "Success!", provider.name + " ID = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.itemId  + "</a>");
         
         var sentences = processSentences(info);
+        var images = processImages(info);
         var seed = generateRandomSeed();
         
         // Bookmark result.
@@ -339,7 +340,7 @@ function fetchCallback(provider, info) {
             id: info.itemId,
             seed: seed,
             sentences: sentences,
-            images: info.images
+            images: images
         });
         
         // Update app state with new info.
@@ -349,7 +350,7 @@ function fetchCallback(provider, info) {
             randomize: $("#randomize").prop('checked'),
             seed: seed,
             sentences: sentences,
-            images: info.images
+            images: images
         });
     } else {
         // Failure.
@@ -364,9 +365,9 @@ function fetchCallback(provider, info) {
 /**
  * Build sentences to populate fields with.
  * 
- * @param {type} info scrape result
+ * @param {Object} info scrape result
  * 
- * @returns {processSentences.sentences|Array} array of normalized sentences
+ * @returns {Array} array of normalized sentences
  */
 function processSentences(info) {
     // Build sentences to populate fields with.
@@ -393,6 +394,22 @@ function processSentences(info) {
     });
     
     return sentences;
+}
+
+/**
+ * Build list of images.
+ * 
+ * @param {Object} info scrape result
+ * 
+ * @returns {Array} array of normalized images
+ */
+function processImages(info) {
+    var images = [];
+    $.each(info.images||[], function(i, v) {
+        if (v) images.push(v);
+    });
+    
+    return images;
 }
 
 /**

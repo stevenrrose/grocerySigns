@@ -88,7 +88,7 @@ if (typeof(exports) !== 'undefined') {
      *  @param image    Loaded ImageFile object.
      */
     function imageLoaded(image) {
-        console.log("Image loaded", image);
+        console.log("Image loaded", image.url);
         scheduleRefresh();
     }
 }

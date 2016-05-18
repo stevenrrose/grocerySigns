@@ -84,15 +84,16 @@ function scrapeRandom(page) {
                 }
                 
                 var sentences = processSentences(info);
+                var images = processImages(info);
                 var seed = generateRandomSeed();
-
+                
                 // Bookmark result.
                 var bookmarkInfo = {
                     provider: provider.name,
                     id: info.itemId,
                     seed: seed,
                     sentences: sentences,
-                    images: info.images
+                    images: images
                 };
                 $.ajax({
                     method: "POST",
@@ -103,6 +104,9 @@ function scrapeRandom(page) {
                     contentType: 'application/json',
                     success: function(data, textStatus, jqXHR) {
                         console.log("Result bookmarked");
+                        
+                        // Preload images.
+                        loadImages(bookmarkInfo);
 
                         // Bookmark seed.
                         var bookmarkSeedInfo = {
