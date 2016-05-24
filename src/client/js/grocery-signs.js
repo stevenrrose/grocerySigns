@@ -61,7 +61,8 @@ PDFJS.disableWorker = true;
  *                      - url: if defined, wrap img tag into link with given href
  */
 function renderPDF(url, container, options) {
-    var options = options||{}
+    var options = options||{};
+    
     PDFJS.getDocument(url).then(function(pdfDoc) {
         /* Only render the first page. */
         pdfDoc.getPage(1).then(function(page) {
@@ -94,6 +95,42 @@ function renderPDF(url, container, options) {
     });
 }
 
+/**
+ * Load & render a PDF in a canvas.
+ * 
+ *  @param url          URL of PDF to render (supports blob and data URIs).
+ *  @param container    Canvas container.
+ *  @param options      Option object:
+ *                      - scale: scale factor (default 2)
+ *                      
+ *  @see renderPDF
+ */
+function loadPDF(url, container, options) {
+    var options = options||{};
+    
+    // Don't render the remote URL directly, as we need access to the X-Scrape-URL response header,
+    // used to link the rendered pages to the main app's matching scrape page. We also need the data
+    // as a blob and not as a plain string for better performance, and since jQuery doesn't support 
+    // that, then use plain XHR instead of $.ajax().
+    // renderPDF("random.pdf", page, 1);
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'blob';
+    xhr.onload = function(e) {
+        if (this.status == 200) {
+            // The scrape page is passed by the server as the X-Scrape-URL response header.
+            options.url = this.getResponseHeader('X-Scrape-URL');
+
+            // Pass the blob URL to PDF.js.
+            var blob = this.response;
+            var url = window.URL.createObjectURL(blob);
+
+            renderPDF(url, container, options);
+        }
+    };
+    xhr.send();
+}
+
 
 /*
  *
@@ -102,7 +139,7 @@ function renderPDF(url, container, options) {
  */
  
 /** Default page format class (see grocery-signs.css) */
-var pageFormatClass = "page-iso";
+var pageFormatClass = "page-us";
 
 /** Delay for scheduled refresh events. */
 var refreshDelay = 500; /*ms*/
