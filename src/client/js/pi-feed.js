@@ -1,5 +1,5 @@
 /** Max displayed pages upon first load. */
-var maxFirstPages = 100;
+var maxFirstPages = 10;
 
 /** Pages from the first batch waiting to be displayed with the "More results" button */
 var lastResults = [];
