@@ -573,7 +573,6 @@ function bookmarkSeed() {
         contentType: 'application/json',
         success: function(data, textStatus, jqXHR) {
             // GA: saved permutation.
-            var label = 
             ga('send', 'event', {
                 eventCategory: 'Bookmark',
                 eventAction: 'saved',
