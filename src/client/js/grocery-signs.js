@@ -20,10 +20,17 @@ var fetchImage = "scraper/fetchImage";
 /**
  * Generate a random string.
  *
- *  @param size     Size of string to generate.
+ *  @param size     Size of string to generate. Negative for alpha only.
  */
 function randomStr(size) {
-    var chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+    var chars;
+    if (size < 0) {
+        // Alpha only.
+        size = -size;
+        chars = "abcdefghijklmnopqrstuvwxyz";
+    } else {
+        chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+    }
     var str = "";
     for (var i=0; i < size; i++) {
         str += chars[Math.floor(Math.random()*chars.length)];

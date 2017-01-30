@@ -13,7 +13,7 @@ providers["Amazon"] = {
     urlPattern: /^http:\/\/www\.amazon\.com\/(s\/ref=nb_sb_noss_2\?field-keywords=.+|dp\/[^/]+)$/,
 
     /** Length of random string used to search for products. */
-    randomSearchStringLength: 4,
+    randomSearchStringLength: -4, /* Negative for alpha only */
     
     /**
      * Search Amazon products. Return item IDs = ASINs for first result page.
