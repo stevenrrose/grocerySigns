@@ -81,7 +81,7 @@ providers["Craigslist"] = {
             {
                 scrape: {
                     params: {limit: 1},
-                    iterator: "#pagecontainer",
+                    iterator: ".page-container",
                     data: {
                         title: {sel: "#titletextonly"},
                         price: {sel: ".attrgroup :contains('age') b"},
