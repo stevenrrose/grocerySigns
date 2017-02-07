@@ -21,7 +21,7 @@
     "mongodb": "^2.0.48",
     "mongoose": "^4.2.5",
     "pdf.js": "^0.1.0",
-    "pdfkit": "^0.7.1",
+    "pdfkit": "^0.8.0",
     "request": "^2.65.0",
     "stream-buffers": "^3.0.0",
     "swig": "^1.4.2"
