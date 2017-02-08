@@ -144,19 +144,37 @@ function fitWords(doc, words, nbLines) {
  *                              characters are too narrow.
  */
 function wrapText(doc, words, nbLines, options) {
-    // Find best fit for given number of lines.
-    var fit = fitWords(doc, words, nbLines);
-    var scaleX = options.width  / fit.width,
-        scaleY = options.height / (doc.currentLineHeight() * nbLines);
-    if (scaleY <= options.maxRatio*scaleX || words.length == nbLines) {
-        // Ratio is acceptable or we can't add lines anymore.
-        return fit;
-    } else {
+    // Temporarily replace doc.widthOfString() by a memoizing version, this 
+    // dramatically accelerates the algorithm.
+    doc.widthOfString_original = doc.widthOfString;
+    var cache = {};
+    doc.widthOfString = function(string) {
+        if (!cache[string]) {
+            cache[string] = doc.widthOfString_original(string);
+        }
+        return cache[string];
+    }
+    
+    while (true) {
+        // Find best fit for given number of lines.
+        var fit = fitWords(doc, words, nbLines);
+        var scaleX = options.width  / fit.width,
+            scaleY = options.height / (doc.currentLineHeight() * nbLines);
+        if (scaleY <= options.maxRatio*scaleX || words.length == nbLines) {
+            // Ratio is acceptable or we can't add lines anymore.
+            break;
+        }
+    
         // Add lines. Optimize the number of calls by estimating the needed number of 
         // extra lines from the square root of the scaleY / (maxRatio * scaleX) ratio.
         var incr = Math.floor(Math.sqrt(scaleY/(options.maxRatio*scaleX)));
-        return wrapText(doc, words, Math.min(words.length, nbLines+incr), options);
+        nbLines = Math.min(words.length, nbLines+incr);
     }
+    
+    // Revert to the original doc.widthOfString().
+    doc.widthOfString = doc.widthOfString_original;
+    
+    return fit;
 }
 
 /**
