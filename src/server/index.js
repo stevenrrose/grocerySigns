@@ -343,6 +343,7 @@ app.get('/:provider', function(req, res, next) {
  * permalinks to PDFs and thumbnails.
  */
 app.get('/:provider/:id', function(req, res, next) {
+    console.log(req.params);
     var provider = req.params.provider;
     var id = req.params.id;
     var randomize, seed;
