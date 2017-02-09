@@ -175,6 +175,7 @@ hr {
     margin-left: initial;
     line-height: initial;
 }
+.input-group-addon.input-group-btn > .btn-default,
 .input-group-addon.input-group-btn > .btn-primary {
     border-radius: 0!important;
     line-height: 20px;

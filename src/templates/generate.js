@@ -67,6 +67,24 @@ function shuffleSentences(sentences, seed) {
 }
 
 /**
+ * Shuffle the image list.
+ * 
+ * @param {array} images        list of ImageFile objects
+ * @param {type}  seed          random seed used by srandom()
+ * 
+ * @returns {array} shuffled image list
+ */
+function shuffleImages(images, seed) {
+    // Make a copy first.
+    var values = images.slice();
+    
+    // Randomize images. Reset random seed first.
+    randomSeed = seed;
+    shuffleArray(values);
+    return values;
+}
+
+/**
  *  Split string into words.
  *  
  *  @param {string} text    String to split.

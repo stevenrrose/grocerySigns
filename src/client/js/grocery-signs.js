@@ -157,6 +157,9 @@ var refreshEvent = null;
 /** Last scraped texts. */
 var scrapedTexts = {};
 
+/** Last loaded images. */
+var loadedImages = [];
+
 /** Last scraped images. */
 var scrapedImages = [];
 
@@ -168,14 +171,19 @@ var scrapedImages = [];
  * @see ImageFile
  */
 function loadImages(state) {
-    scrapedImages = [];
-    $.each(state.images||[], function(i, v) {
-        scrapedImages[i] = new ImageFile(
-                fetchImage 
-                + "?url=" + encodeURIComponent(v) 
-                + "&provider=" + encodeURIComponent(state.provider)
-                + "&id=" + encodeURIComponent(state.id), 
-                imageLoaded);
+    loadedImages = [];
+    $.each(state.images||[], function(i, url) {
+        if (url.match(/^data:/)) {
+            // Don't load data URIs through the fetchImage proxy since we already have the data as base64.
+            loadedImages[i] = new ImageFile(url, imageLoaded);
+        } else {
+            loadedImages[i] = new ImageFile(
+                    fetchImage 
+                    + "?url=" + encodeURIComponent(url) 
+                    + "&provider=" + encodeURIComponent(state.provider)
+                    + "&id=" + encodeURIComponent(state.id), 
+                    imageLoaded);
+        }
     });
 }
 
@@ -199,12 +207,14 @@ function getFileName(index) {
         return templateName + ".pdf";
     }
     
-    var provider = $("#autofill-provider option:selected").text();
-    var filename = provider + "-" + currentState.id + "-" + templateName;
+    var components = [];
+    components.push(currentState.provider);
+    components.push(currentState.id);
+    components.push(templateName);
     if (currentState.randomize) {
-        filename += "-" + currentState.seed;
+        components.push(currentState.seed);
     }
-    return filename + ".pdf";
+    return components.join('-') + '.pdf';
 }
 
 /**
@@ -253,8 +263,21 @@ function refreshFrame(index) {
     
     // Eventually output the blob into given container.
     stream.on('finish', function() {
-        var url = stream.toBlobURL('application/pdf');
+        // Get & remember blob object.
+        var blob = stream.toBlob('application/pdf');
+        $(container).data("blob", blob);
+        
+        // Clear previous blob URL and remember new one.
+        var url = $(container).data("blobUrl");
+        if (url) {
+            window.URL.revokeObjectURL(url);
+        }
+        url = window.URL.createObjectURL(blob);
+        $(container).data("blobUrl", url);
+
+        // Render blob URL into container.
         renderPDF(url, container);
+        
         // Set link attributes.
         var index = $(container).data("index");
         $("#page-download-" + index)
@@ -312,9 +335,10 @@ function progress(step, nbSteps, stepLabel) {
  *  Enable/disable interface.
  *
  *  @param enabled  Whether to enable or disable interface.
+ *  @param modal    Modal dialog selector (defaults to '#progressDialog')
  */
-function enableInterface(enabled) {
-    $("#progressDialog").modal(enabled?'hide':'show');
+function enableInterface(enabled, modal) {
+    $(modal||"#progressDialog").modal(enabled?'hide':'show');
 }
 
 /**
@@ -341,10 +365,13 @@ function displayMessage(success, title, message) {
 function populateFields() {
     var sentences;
     if (currentState.randomize) {
+        // Shuffle sentences & images.
         sentences = shuffleSentences(currentState.sentences, currentState.seed);
+        scrapedImages = shuffleImages(loadedImages, currentState.seed);
     } else {
-        // Use sentences in order.
+        // Use sentences & images in order.
         sentences = currentState.sentences;
+        scrapedImages = loadedImages;
     }
 
     // Populate fields with resulting values.
@@ -635,7 +662,11 @@ function updateState(state, replace) {
     if (replace) {
         history.replaceState(state, null);
     } else {
-        var url = '/'+state.provider+'/'+state.id;
+        var components = [];
+        components.push(state.provider);
+        components.push(state.id);
+        var url = '/' + components.join('/');
+
         if (state.randomize) {
             url += '?randomize=' + state.seed;
         }

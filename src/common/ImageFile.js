@@ -54,6 +54,13 @@ if (typeof(exports) !== 'undefined') {
      *  @param onload   Called when data loaded.
      */
     ImageFile.prototype._load = function(onload) {  
+        if (this.url.match('^data:')) {
+            // Already a data URI.
+            this.data = this.url;
+            if (onload) onload(this);
+            return;
+        }
+
         var request = new XMLHttpRequest();
         request.open('get', this.url, true);
         request.responseType = 'arraybuffer';
@@ -70,9 +77,9 @@ if (typeof(exports) !== 'undefined') {
 
             // Image data. PDFKit wants data URIs and not Array buffer.
             image.data =
-                "data:" 
+                'data:' 
                 + image.type 
-                + ";base64,"
+                + ';base64,'
                 + btoa(String.fromCharCode.apply(null, new Uint8Array(request.response)));
 
             // Callback.
@@ -88,7 +95,11 @@ if (typeof(exports) !== 'undefined') {
      *  @param image    Loaded ImageFile object.
      */
     function imageLoaded(image) {
-        console.log("Image loaded", image.url);
+        if (image.url.match('^data:')) {
+            console.log("Image loaded", "[data URI]");
+        } else {
+            console.log("Image loaded", image.url);
+        }
         scheduleRefresh();
     }
 }
