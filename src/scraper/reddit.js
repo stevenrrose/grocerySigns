@@ -30,8 +30,8 @@ providers["Reddit"] = {
     /**
      * Fetch & scrape given Reddit page.
      *
-     *  @param itemId       Item ID of the product to scrape.
-     *  @param callback     Function called with product info.
+     *  @param itemId       Item ID of the page to scrape.
+     *  @param callback     Function called with page info.
      */ 
     fetch: function(itemId, callback) {
         console.log("fetch", itemId);
