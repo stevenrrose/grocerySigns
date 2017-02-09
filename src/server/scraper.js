@@ -32,6 +32,7 @@ include('../scraper/etsy.js');
 include('../scraper/okcupid.js');
 include('../scraper/craigslist.js');
 include('../scraper/reddit.js');
+include('../scraper/twitter.js');
 
 // Exports the above *providers* variable.
 exports.providers = providers;
