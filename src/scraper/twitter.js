@@ -104,7 +104,10 @@ providers["Twitter"] = {
                 var total = data[0].length;
                 var i = Math.floor(Math.random()*total);
                 var info = data[0][i];
+                // Get full URL.
                 info.url = "https://twitter.com" + info.url;
+                // Fix price.
+                if (!info.price) info.price = "0";
                 // Generate item ID from URL path with /'s replaced by |'s.
                 info.itemId = new URL(info.url).pathname.replace(/\//g, '|');
                 callback($.extend({success: info ? true : false}, info));
