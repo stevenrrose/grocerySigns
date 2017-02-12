@@ -415,7 +415,7 @@ function generatePDF(stream, template, fields, images, globalOptions) {
                     doc.translate(padX, padY);
 
                     var font = fieldOptions.font;
-                    doc.font(typeof(font) === 'string' ? font : font.data);
+                    doc.font(typeof(font) === 'string' ? font : bestMatchingFont(font, text).data);
                     switch (fieldOptions.type) {
                         case 'text':
                         case 'static': {
@@ -552,4 +552,41 @@ function generatePDF(stream, template, fields, images, globalOptions) {
     
     // Done.
     doc.end();
+}
+
+/**
+ *  Select best font for a given text.
+ *
+ *  @param fonts    Single FontFile or array of FontFile's.
+ *  @param text     Text string to render.
+ *
+ *  @return best matching FontFile
+ */
+function bestMatchingFont(fonts, text) {
+    if (!fonts.length) {
+        // Single font.
+        return fonts;
+    }
+    
+    // Iterate over fonts and find one with the highest number of supported glyphs.
+    var max = 0;
+    var maxFont;
+    for (var i = 0; i < fonts.length; i++) {
+        var font = fonts[i];
+        if (!font.opentype) continue; // No OpenType info, unusable.
+        
+        // Count number of supported glyphs.
+        var nb = 0;
+        for (var j = 0; j < text.length; j++) {
+            var c = text.charAt(j);
+            if (font.opentype.charToGlyphIndex(c)) nb++;
+        }
+        
+        if (nb > max) {
+            // This one is better.
+            max = nb;
+            maxFont = font;
+        }
+    }
+    return maxFont;
 }
