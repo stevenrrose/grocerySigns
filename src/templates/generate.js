@@ -569,7 +569,7 @@ function bestMatchingFont(fonts, text) {
     }
     
     // Iterate over fonts and find one with the highest number of supported glyphs.
-    var max = 0;
+    var max = -1;
     var maxFont;
     for (var i = 0; i < fonts.length; i++) {
         var font = fonts[i];
