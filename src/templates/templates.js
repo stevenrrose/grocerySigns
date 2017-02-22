@@ -102,19 +102,17 @@
 var globalMaxLength = 100;
 
 /** Load our fonts. */
-var SansPosterBold = new FontFile("fonts/SansPosterBold.ttf", fontLoaded);
-var ArialBlack = new FontFile("fonts/ArialBlack.ttf", fontLoaded);
+//var SansPosterBold = new FontFile("fonts/SansPosterBold.ttf", fontLoaded);
 var OpenSansExtraBold = new FontFile("fonts/OpenSans-ExtraBold.ttf", fontLoaded);
 var RubikBlack = new FontFile("fonts/Rubik-Black.ttf", fontLoaded); // Hebrew
 var ChangaExtraBold = new FontFile("fonts/Changa-ExtraBold.ttf", fontLoaded); // Arabic
 // var JejuGothicRegular = new FontFile("fonts/JejuGothic-Regular.ttf", fontLoaded); // Korean
 // var MSMHeiBold = new FontFile("fonts/MSMHei-Bold.ttf", fontLoaded); // Chinese
 
-var FontSet1 = [SansPosterBold, RubikBlack, OpenSansExtraBold, ChangaExtraBold];
-var FontSet2 = [SansPosterBold, OpenSansExtraBold, RubikBlack, ChangaExtraBold];
+var FontSet1 = [RubikBlack, OpenSansExtraBold, ChangaExtraBold];
 
 var templates = {
-	"SansPosterBold (Letter)" : {
+	"Rubik Black" : {
 		/* Letter */
 		width: 		612,
 		height: 	792,
@@ -155,7 +153,7 @@ var templates = {
 		/* Letter */
 		width: 		612,
 		height: 	792,
-		font: 		FontSet2,
+		font: 		FontSet1,
 		maxRatio: 	2,
 		maxHRatio: 	2,
 		padX: 		10, 
@@ -176,7 +174,7 @@ var templates = {
 		/* Letter */
 		width: 		612,
 		height: 	792,
-		font: 		FontSet2,
+		font: 		FontSet1,
 		maxRatio: 	2,
 		maxHRatio: 	2,
 		padX: 		5, 
