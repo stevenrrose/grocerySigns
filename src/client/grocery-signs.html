@@ -90,7 +90,7 @@
                         <!-- Generate button -->
                         <div class="form-group col-sm-3">
                             <label class="control-label hidden-xs">&nbsp;</label>
-                            <button type="button" id="autofill" class="btn btn-primary form-control" onclick="scrapeFields()">Generate <span class="icon icon-generate"></span></button>
+                            <button type="button" id="autofill" class="btn btn-primary form-control" onclick="scrapeFields()" disabled>Generate <span class="icon icon-generate"></span></button>
                         </div>
                         
                         <!-- Random seed -->
@@ -125,7 +125,7 @@
                 </form>
                 
                 <!-- Template field container -->
-                <div id="fields" class="collapse in">
+                <div id="fields" class="collapse">
                     <hr/>
                     <form class="row" role="form">
                         {% for field in fields %}
@@ -137,7 +137,7 @@
                     </form>
                 </div>
                 
-                <button id="fieldsCollapse" type="button" data-toggle="collapse" data-target="#fields" aria-expanded="false" aria-controls="fields">
+                <button id="fieldsCollapse" type="button" data-toggle="collapse" data-target="#fields" aria-expanded="false" aria-controls="fields" class="dropup collapsed">
                     <span class="caret"></span>
                     <span class="sr-only">Show/hide field panel</span>
                 </button>

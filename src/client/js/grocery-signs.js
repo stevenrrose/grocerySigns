@@ -349,7 +349,7 @@ function enableInterface(enabled, modal) {
  *  @param message  Message body.
  */
 function displayMessage(success, title, message) {
-    $("#parameters").append(
+    $("#fields").append(
           "<div class='alert small alert-dismissible alert-" + (success ? "success" : "danger") + " fade in' role='alert'>"
         + "<button type='button' class='close' data-dismiss='alert' aria-label='Close'><span aria-hidden='true'>&times;</span></button>"
         + "<span class='glyphicon glyphicon-" + (success ? "ok" : "exclamation") + "-sign'></span> "
@@ -555,6 +555,27 @@ function scrapeFields() {
 function seedChanged() {
     updateState($.extend({}, currentState, {randomize: $("#randomize").prop('checked'), seed: $("#seed").val()}));
 }
+
+/**
+ * Update interface when provider changes: generate button, etc.
+ */
+function providerChanged() {
+    var provider = providers[$("#autofill-provider").val()];
+    if (provider) {
+        $("#autofill").prop('disabled', false);
+    } else {
+        $("#autofill").prop('disabled', true);
+    }
+}
+
+
+/**
+ * Update interface depending on the provider.
+ */
+$(function() {
+    $("#autofill-provider").change(providerChanged);
+    providerChanged();
+});
 
 
 /*
