@@ -2,7 +2,7 @@
  * Add random PDF pages. Triggered by the infinite scroll mechanism  (spinning icon).
  * Each page element renders the /random.pdf file, which selects a random scrape permutation.
  */
-function appendPages() {
+function appendPages(nb) {
     var $pages = $("#pages");
     var nbPages = $("#pages .page").length;
     if (nbPages == 0) {
@@ -13,13 +13,13 @@ function appendPages() {
             var rect = end[0].getBoundingClientRect();
             if (rect.top < $(window).height()) {
                 // Spinning icon is visible, append next page.
-                appendPages();
+                appendPages(2);
             }
         });
     }
     
-    // Add a couple of pages and render a random PDF within.
-    for (var i = 0; i < 2; i++) {
+    // Add nb pages and render a random PDF within.
+    for (var i = 0; i < nb; i++) {
         // Create page container.
         var page = $("<div class='page'></div>").addClass(pageFormatClass);
         $pages.append($("<div class='page-container col-xs-12 col-sm-6'></div>")
