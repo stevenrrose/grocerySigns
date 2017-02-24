@@ -349,7 +349,8 @@ function enableInterface(enabled, modal) {
  *  @param message  Message body.
  */
 function displayMessage(success, title, message) {
-    $("#fields").append(
+    $("#parameters .alert").appendTo("#fields");
+    $("#parameters").append(
           "<div class='alert small alert-dismissible alert-" + (success ? "success" : "danger") + " fade in' role='alert'>"
         + "<button type='button' class='close' data-dismiss='alert' aria-label='Close'><span aria-hidden='true'>&times;</span></button>"
         + "<span class='glyphicon glyphicon-" + (success ? "ok" : "exclamation") + "-sign'></span> "
