@@ -19,6 +19,13 @@
     margin-left: 8px;
     margin-right: 8px;
 }
+@media (min-width: 800px) {
+	#pages {
+		margin-left: auto;
+		margin-right: auto;
+		max-width: 130vh;
+	}
+}
 
 /* Output pages with fixed aspect ratio trick: */
 /* - Generic page wrapper class: full-width element combined with ratio-specific class. */
