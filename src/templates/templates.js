@@ -102,17 +102,17 @@
 var globalMaxLength = 100;
 
 /** Load our fonts. */
-//var SansPosterBold = new FontFile("fonts/SansPosterBold.ttf", fontLoaded);
+var SansPosterBold = new FontFile("fonts/SansPosterBold.ttf", fontLoaded);
 var OpenSansExtraBold = new FontFile("fonts/OpenSans-ExtraBold.ttf", fontLoaded);
 var RubikBlack = new FontFile("fonts/Rubik-Black.ttf", fontLoaded); // Hebrew
 var ChangaExtraBold = new FontFile("fonts/Changa-ExtraBold.ttf", fontLoaded); // Arabic
 // var JejuGothicRegular = new FontFile("fonts/JejuGothic-Regular.ttf", fontLoaded); // Korean
 // var MSMHeiBold = new FontFile("fonts/MSMHei-Bold.ttf", fontLoaded); // Chinese
 
-var FontSet1 = [RubikBlack, OpenSansExtraBold, ChangaExtraBold];
+var FontSet1 = [SansPosterBold, RubikBlack, OpenSansExtraBold, ChangaExtraBold];
 
 var templates = {
-	"Rubik Black" : {
+	"Template 1" : {
 		/* Letter */
 		width: 		612,
 		height: 	792,
@@ -129,7 +129,7 @@ var templates = {
 			"FIELD06" : { left: "FIELD03.separator", top: 634, right: 612,  bottom: 730  },
 		}
 	},
-	"Template 1" : {
+	"Template 2" : {
 		/* Letter */
 		width: 		612,
 		height: 	792,
@@ -149,7 +149,7 @@ var templates = {
 			"FIELD08" : { left: 470, 					top: 300, 				right: 600, 				bottom: 410 },
 		}
 	},
-	"Template 2" : {
+	"Template 3" : {
 		/* Letter */
 		width: 		612,
 		height: 	792,
@@ -170,7 +170,7 @@ var templates = {
 			"FIELD09" : { left: 20, 			top: 220, 				right: 110, 				bottom: 310,	type: 'image' },
 		}
 	},
-	"Template 3" : {
+	"Template 4" : {
 		/* Letter */
 		width: 		612,
 		height: 	792,
