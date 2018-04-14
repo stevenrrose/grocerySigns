@@ -8,6 +8,9 @@ var swig = require('swig');
 var scraper = require('./scraper.js');
 var templates = require('./templates.js');
 
+// Used to debug outgoing requests.
+// request.debug = true;
+
 /**
  * 
  * DB stuff.

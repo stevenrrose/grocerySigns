@@ -23,7 +23,8 @@ providers["Craigslist"] = {
      */
     search: function(what, callback) {
         // Select a random subcategory.
-        var subcats = ["stp", "w4w", "w4m", "m4w", "m4m", "msr", "cas", "mis", "rnr"];
+        // var subcats = ["stp", "w4w", "w4m", "m4w", "m4m", "msr", "cas", "mis", "rnr"];
+        var subcats = ["mis", "rnr"];
         var what = subcats[Math.floor(Math.random()*subcats.length)];
         console.log("search", what);
         var url = "https://newyork.craigslist.org/search/" + what;
@@ -53,7 +54,8 @@ providers["Craigslist"] = {
                             iterator: ".hdrlnk",
                             data: {
                                 itemId: function() {
-                                    return $(this).attr('href').split(/[/.]/).splice(1,3).join('_');
+                                    var path = new URL($(this).attr('href')).pathname;
+                                    return path.match(/\/(.*)\..*?/)[1].replace(/\//g,'_');
                                 }
                             }
                         }
