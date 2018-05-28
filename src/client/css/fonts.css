@@ -1,0 +1,10 @@
+@import url('https://fonts.googleapis.com/css?family=Rubik:900|Open+Sans:800|Changa:800');
+@import url('https://fonts.googleapis.com/earlyaccess/mplus1p.css'); /* 'Mplus 1p', Japanese */
+
+@font-face {
+    font-family: "Sans Poster Bold JL";
+    font-style: normal;
+    font-weight: bold;
+    src: url('../fonts/SansPosterBold.ttf') format('truetype');
+    unicode-range: U+0-7F;
+}

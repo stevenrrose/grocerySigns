@@ -101,18 +101,18 @@ function splitWords(text) {
  *  recursive algorithm but it works fine for our purpose (the number of words 
  *  and lines is low).
  *  
- *  @param doc      The PDFDocument.
- *  @param words    Array of words to fill lines with.
- *  @param nbLines  Number of lines to fill.
+ *  @param widthOfString    String measurement function.
+ *  @param words            Array of words to fill lines with.
+ *  @param nbLines          Number of lines to fill.
  */ 
-function fitWords(doc, words, nbLines) {
+function fitWords(widthOfString, words, nbLines) {
     // Stop conditions.
     if (nbLines == 1) {
         // Single line.
         var line = words.join(" ");
         return {
             lines: [line], 
-            width: doc.widthOfString(line)
+            width: widthOfString(line)
         };
     } else if (words.length < nbLines) {
         // Less words than lines.
@@ -131,11 +131,11 @@ function fitWords(doc, words, nbLines) {
     for (var i = 0; i < words.length; i++) {
         // First line.
         var line0 = words.slice(0, i+1).join(" ");
-        var width0 = doc.widthOfString(line0);
+        var width0 = widthOfString(line0);
         if (width0 >= fit.width) continue; // No need to continue.
         
         // Recurse on remaining lines.
-        var remainder = fitWords(doc, words.slice(i+1), nbLines-1);
+        var remainder = fitWords(widthOfString, words.slice(i+1), nbLines-1);
         if (remainder.width >= fit.width) continue; // No need to continue.
         
         // This one is better.
@@ -152,32 +152,32 @@ function fitWords(doc, words, nbLines) {
  *  Calls *fitWords* with increasing *nbLines* values until an acceptable 
  *  scaling ratio is found.
  *
- *  @param doc      The PDFDocument.
- *  @param words    Array of words to form lines with.
- *  @param nbLines  Minimum number of lines to form.
- *  @param options  Options:
- *                  - width     Width of target box.
- *                  - height    Height of target box.
- *                  - maxRatio  Maximum y/x scaling ratio. Beyond this value the
- *                              characters are too narrow.
+ *  @param widthOfString    String measurement function.
+ *  @param lineHeight       Text line height.
+ *  @param words            Array of words to form lines with.
+ *  @param nbLines          Minimum number of lines to form.
+ *  @param options          Options:
+ *                          - width     Width of target box.
+ *                          - height    Height of target box.
+ *                          - maxRatio  Maximum y/x scaling ratio. Beyond this
+ *                                      value the characters are too narrow.
  */
-function wrapText(doc, words, nbLines, options) {
-    // Temporarily replace doc.widthOfString() by a memoizing version, this 
-    // dramatically accelerates the algorithm.
-    doc.widthOfString_original = doc.widthOfString;
+function wrapText(widthOfString, lineHeight, words, nbLines, options) {
+    // Use a memoizing version of widthOfString(), this dramatically
+    // accelerates the algorithm.
     var cache = {};
-    doc.widthOfString = function(string) {
+    var widthOfString_memo = function(string) {
         if (!cache[string]) {
-            cache[string] = doc.widthOfString_original(string);
+            cache[string] = widthOfString(string);
         }
         return cache[string];
     }
     
     while (true) {
         // Find best fit for given number of lines.
-        var fit = fitWords(doc, words, nbLines);
+        var fit = fitWords(widthOfString_memo, words, nbLines);
         var scaleX = options.width  / fit.width,
-            scaleY = options.height / (doc.currentLineHeight() * nbLines);
+            scaleY = options.height / (lineHeight * nbLines);
         if (scaleY <= options.maxRatio*scaleX || words.length == nbLines) {
             // Ratio is acceptable or we can't add lines anymore.
             break;
@@ -188,9 +188,6 @@ function wrapText(doc, words, nbLines, options) {
         var incr = Math.floor(Math.sqrt(scaleY/(options.maxRatio*scaleX)));
         nbLines = Math.min(words.length, nbLines+incr);
     }
-    
-    // Revert to the original doc.widthOfString().
-    doc.widthOfString = doc.widthOfString_original;
     
     return fit;
 }
@@ -414,8 +411,14 @@ function generatePDF(stream, template, fields, images, globalOptions) {
                         padY = fieldOptions.padY;
                     doc.translate(padX, padY);
 
+                    // Font.
                     var font = fieldOptions.font;
                     doc.font(typeof(font) === 'string' ? font : bestMatchingFont(font, text).data);
+                    
+                    // Text measurement.
+                    var lineHeight = doc.currentLineHeight();
+                    var widthOfString = function(string) {return doc.widthOfString(string);}
+                    
                     switch (fieldOptions.type) {
                         case 'text':
                         case 'static': {
@@ -425,16 +428,16 @@ function generatePDF(stream, template, fields, images, globalOptions) {
                                 height:   height - padY*2,
                                 maxRatio: fieldOptions.maxRatio,
                             };
-                            var fit = wrapText(doc, splitWords(text), 1, options);
+                            var fit = wrapText(widthOfString, lineHeight, splitWords(text), 1, options);
                             
                             if (fit.lines.length > 1) {
                                 // Output wrapped text line by line.
                                 var scaleX = options.width  / fit.width,
-                                    scaleY = options.height / (doc.currentLineHeight() * fit.lines.length);
+                                    scaleY = options.height / (lineHeight * fit.lines.length);
                                 doc.scale(scaleX, scaleY, {/*empty block needed*/});
                                 var y = 0;
                                 for (var i = 0; i < fit.lines.length; i++) {
-                                    var lineWidth = doc.widthOfString(fit.lines[i]);
+                                    var lineWidth = widthOfString(fit.lines[i]);
                                     var x;
                                     switch (fieldOptions.align) {
                                         case 'left':    x = 0;                          break;
@@ -442,13 +445,13 @@ function generatePDF(stream, template, fields, images, globalOptions) {
                                         default:        x = (fit.width - lineWidth)/2;  break;
                                     }
                                     doc.text(fit.lines[i], x, y);
-                                    y += doc.currentLineHeight();
+                                    y += lineHeight;
                                 }
                             } else {
                                 // Single line: limit ratio in horizontal direction as well.
-                                var lineWidth = doc.widthOfString(fit.lines[0]);
+                                var lineWidth = widthOfString(fit.lines[0]);
                                 var scaleX = options.width  / lineWidth;
-                                    scaleY = options.height / doc.currentLineHeight();
+                                    scaleY = options.height / lineHeight;
                                 if (scaleX > scaleY * fieldOptions.maxHRatio) {
                                     scaleX = scaleY * fieldOptions.maxHRatio;
                                 }
@@ -486,16 +489,16 @@ function generatePDF(stream, template, fields, images, globalOptions) {
                             // Compute X scaling of currency+main+decimal parts.
                             var scaleX, scaleXMain;
                             if (fieldOptions.mainWidth) {
-                                scaleX = (width - padX - fieldOptions.mainWidth) / doc.widthOfString(currency+(decimal||'00'));
-                                scaleXMain = fieldOptions.mainWidth / doc.widthOfString(main);
+                                scaleX = (width - padX - fieldOptions.mainWidth) / widthOfString(currency+(decimal||'00'));
+                                scaleXMain = fieldOptions.mainWidth / widthOfString(main);
                             } else {
-                                scaleX = (width - padX) / doc.widthOfString(currency+main+(decimal||'00'));
+                                scaleX = (width - padX) / widthOfString(currency+main+(decimal||'00'));
                                 scaleXMain = scaleX;
                             }
                             
                             // Compute Y scaling of currency+decimal and main parts.
-                            var scaleY     = (height                  - padY*2) / doc.currentLineHeight(),
-                                scaleYMain = (fieldOptions.mainHeight - padY*2) / doc.currentLineHeight();
+                            var scaleY     = (height                  - padY*2) / lineHeight,
+                                scaleYMain = (fieldOptions.mainHeight - padY*2) / lineHeight;
                                 
                             // Output parts.
                             var x = 0;
@@ -505,7 +508,7 @@ function generatePDF(stream, template, fields, images, globalOptions) {
                             doc.scale(scaleX, scaleY, {/*empty block needed*/});
                             doc.text(currency, x, 0);
                             doc.restore();
-                            x += doc.widthOfString(currency);
+                            x += widthOfString(currency);
                             fieldCoords[id + ".currency"] = left + x*scaleX;
                             
                             // - Main.
@@ -526,7 +529,7 @@ function generatePDF(stream, template, fields, images, globalOptions) {
                             doc.scale(scaleXMain, scaleYMain, {/*empty block needed*/});
                             doc.text(main, x*scaleX/scaleXMain, 0);
                             doc.restore();
-                            x += doc.widthOfString(main)*scaleXMain/scaleX;
+                            x += widthOfString(main)*scaleXMain/scaleX;
                             fieldCoords[id + ".separator"] = left + x*scaleX;
                             
                             // - Decimal.
@@ -589,4 +592,325 @@ function bestMatchingFont(fonts, text) {
         }
     }
     return maxFont;
+}
+
+
+/*
+ *
+ * SVG Generation.
+ *
+ */
+
+/**
+ *  Generate SVG from input fields for a given template.
+ *  
+ * @param {object}  template        Template descriptor.
+ * @param {object}  fields          Field ID => text map.
+ * @param {array}   images          List of ImageFile.
+ * @param {object}  globalOptions   Global options.
+ *
+ * @return SVGSVGElement
+ */
+function generateSVG(template, fields, images, globalOptions) {
+    globalOptions = globalOptions||{};
+
+    // Create SVG document with template size.
+    var paper = Raphael(0, 0, template.width, template.height);
+    paper.setViewBox(0, 0, template.width, template.height, false);
+
+    // String measurement.
+    paper.renderedTextSize = function(string, attr) {
+        var el = this.text(0, 0, string);
+        el.hide();
+        el.attr(attr);
+        
+        var bBox = el.getBBox();
+        el.remove();
+        
+        return {
+            width: bBox.width,
+            height: bBox.height
+        };
+    }
+
+    //
+    // Iterate over fields until none is left or displayable. As some fields use relative placement,
+    // they must be displayed after the fields they depend on. So we make several passes until we
+    // get enough info to display such fields properly.
+    //
+    
+    // Remember fields done so far.
+    var doneFields = [];
+    
+    // Array of field coordinates. This is simply a string map whose key is a simple specifier such as "FIELDNAME.left".
+    // Field types may define extra dimension specifiers (e.g. "price" fields define "FIELDNAME.separator for x position 
+    // of price separator). There are also template-wide coordinates for page dimensions.
+    var fieldCoords = {
+        "width"  : template.width,
+        "height" : template.height
+    };
+    
+    // Image index. Each image field consumes images in order.
+    var imageIndex = 0;
+    
+    while (Object.keys(doneFields).length < Object.keys(template.fields).length)
+    {
+        var progress = false;
+        
+        for (var id in template.fields) {
+            if (doneFields[id]) continue;
+            
+            var field = template.fields[id];
+            var fieldOptions = mergeObjects({
+                    inputId: id,
+                    type: 'text', 
+                    padX: 0, padY: 0, 
+                    actualMaxLength: globalMaxLength, 
+                    maxRatio: 2,
+                    maxHRatio: 4,
+                    align: 'center',
+                    currency: "$",
+                    separator: ".",
+                    color: 'black',
+                }, globalOptions, template, field);
+        
+            // Get or retrieve box coordinates.
+            var left   = (typeof(field.left)   === 'number') ? field.left   : fieldCoords[field.left],
+                right  = (typeof(field.right)  === 'number') ? field.right  : fieldCoords[field.right],
+                top    = (typeof(field.top)    === 'number') ? field.top    : fieldCoords[field.top],
+                bottom = (typeof(field.bottom) === 'number') ? field.bottom : fieldCoords[field.bottom];
+                
+            // Remember coordinates that we know at this stage.
+            if (typeof(left)   === 'number') fieldCoords[id + ".left"]   = left;
+            if (typeof(right)  === 'number') fieldCoords[id + ".right"]  = right;
+            if (typeof(top)    === 'number') fieldCoords[id + ".top"]    = top;
+            if (typeof(bottom) === 'number') fieldCoords[id + ".bottom"] = bottom;
+            
+            if (typeof(left) === 'number' && typeof(right)  === 'number') fieldCoords[id + ".width"]  = right  - left;
+            if (typeof(top)  === 'number' && typeof(bottom) === 'number') fieldCoords[id + ".height"] = bottom - top;
+            
+            if (   typeof(left)   !== 'number'
+                || typeof(right)  !== 'number'
+                || typeof(top)    !== 'number'
+                || typeof(bottom) !== 'number') {
+                // We're still missing some info, try next loop iteration.
+                continue;
+            }
+
+            // Compute box dimensions.
+            var width  = right  - left,
+                height = bottom - top;
+            
+            // Original matrix.
+            var matrix = Raphael.matrix();
+
+            // Box origin.
+            matrix.translate(left, top);
+
+            // Rotation.
+            if (fieldOptions.angle) matrix.rotate(fieldOptions.angle);
+            
+            if (DEBUG) {
+                paper.rect(0, 0, width, height)
+                    .transform(matrix.toTransformString())
+                    .attr('stroke', 'black');
+                if (field.mainHeight) {
+                    paper.rect(0, 0, width, field.mainHeight)
+                        .transform(matrix.toTransformString())
+                        .attr('stroke', 'black');
+                }
+            }
+            
+            var fill;
+            if (field.inverted) {
+                // White on black.
+                paper.rect(0, 0, width, height)
+                    .transform(matrix.toTransformString())
+                    .attr('fill', fieldOptions.color);
+                fill = 'white';
+            } else {
+                fill = fieldOptions.color;
+            }
+            
+            if (field.background) {
+                // Background image.
+                paper.image(field.background.data, 0, 0,  width, height)
+                    .transform(matrix.toTransformString());
+            }
+            
+            if (fieldOptions.type == 'image') {
+                // Output next scraped image.
+                if (imageIndex <= images.length && images[imageIndex] && images[imageIndex].data) {
+                    try {
+                        var im = paper.image(images[imageIndex].data, 0, 0, width, height)
+                            .transform(matrix.toTransformString());
+                        im.node.setAttribute('preserveAspectRatio', 'xMidYMid');
+                    } catch (e) {
+                        console.error("generateSVG", "Raphael exception with image", images[imageIndex], e);
+                    }
+                    imageIndex++;
+                }
+            } else {
+                // Get & normalize field value.
+                var text;
+                if (fieldOptions.type == 'static') {
+                    text = fieldOptions.text;
+                } else {
+                    text = fields[fieldOptions.inputId];
+                }
+                text = normalizeString(text);
+                if (fieldOptions.filter) text = fieldOptions.filter(text);
+                maxLength = fieldOptions.actualMaxLength;
+                if (maxLength) text = text.substring(0, maxLength);
+                if (text.length > 0) {
+                    // Text origin.
+                    var padX = fieldOptions.padX,
+                        padY = fieldOptions.padY;
+                    matrix.translate(padX, padY);
+
+                    // Attributes.
+                    var font = fieldOptions.font;
+                    var attr = {'font-family': font, 'font-size': 12, 'font-weight': 'bolder', 'fill': fill, 'text-anchor': 'start'};
+                    
+                    // Text measurement.
+                    var lineHeight = paper.renderedTextSize("X", attr).height;
+                    var widthOfString = function(string) {return paper.renderedTextSize(string, attr).width;}
+                    
+                    switch (fieldOptions.type) {
+                        case 'text':
+                        case 'static': {
+                            // Regular text field: use harmonious word wrapping.
+                            var options = {
+                                width:    width  - padX*2,
+                                height:   height - padY*2,
+                                maxRatio: fieldOptions.maxRatio,
+                            };
+                            var fit = wrapText(widthOfString, lineHeight, splitWords(text), 1, options);
+                            
+                            if (fit.lines.length > 1) {
+                                // Output wrapped text line by line.
+                                var scaleX = options.width  / fit.width,
+                                    scaleY = options.height / (lineHeight * fit.lines.length);
+                                matrix.scale(scaleX, scaleY);
+                                matrix.translate(0, lineHeight / 2); // Vertical centering
+                                var y = 0;
+                                for (var i = 0; i < fit.lines.length; i++) {
+                                    var size = { width: widthOfString(fit.lines[i]), height: lineHeight };
+                                    var x;
+                                    switch (fieldOptions.align) {
+                                        case 'left':    x = 0;                          break;
+                                        case 'right':   x = (fit.width - size.width);    break;
+                                        default:        x = (fit.width - size.width)/2;  break;
+                                    }
+                                    paper.text(x, y, fit.lines[i])
+                                        .transform(matrix.toTransformString())
+                                        .attr(attr);
+                                    y += size.height;
+                                }
+                            } else {
+                                // Single line: limit ratio in horizontal direction as well.
+                                var size = { width: widthOfString(fit.lines[0]), height: lineHeight };
+                                var scaleX = options.width  / size.width;
+                                    scaleY = options.height / size.height;
+                                if (scaleX > scaleY * fieldOptions.maxHRatio) {
+                                    scaleX = scaleY * fieldOptions.maxHRatio;
+                                }
+                                var x;
+                                switch (fieldOptions.align) {
+                                    case 'left':    x = 0;                          break;
+                                    case 'right':   x = (options.width - size.width * scaleX);   break;
+                                    default:        x = (options.width - size.width * scaleX)/2;     break;
+                                }
+                                matrix.translate(x, 0);
+                                matrix.scale(scaleX, scaleY);
+                                matrix.translate(0, lineHeight / 2); // Vertical centering
+                                paper.text(0, 0, fit.lines[0])
+                                    .transform(matrix.toTransformString())
+                                    .attr(attr);
+                                }
+                            break;
+                        }
+                        case 'price': {
+                            // Price field have 3 parts:
+                            // - Currency sign
+                            // - Main part (taller)
+                            // - Decimal part
+                            // All 3 parts use the same X scaling (i.e. the char widths
+                            // are the same), but the main part is taller and so uses
+                            // a greater Y factor.
+                            var currency = fieldOptions.currency;
+                            var separator = fieldOptions.separator;
+                            var parts = text.split(currency);
+                            parts = parts[parts.length-1].split(separator);
+                            var main = parts[0];
+                            var decimal = parts[1];
+                            if (!decimal && main.length >4 ) {
+                                decimal = main.substring(main.length-2);
+                                main = main.substring(0, main.length-2);
+                            }
+                            
+                            // Compute X scaling of currency+main+decimal parts.
+                            var scaleX, scaleXMain;
+                            if (fieldOptions.mainWidth) {
+                                scaleX = (width - padX - fieldOptions.mainWidth) / widthOfString(currency+(decimal||'00'));
+                                scaleXMain = fieldOptions.mainWidth / widthOfString(main);
+                            } else {
+                                scaleX = (width - padX) / widthOfString(currency+main+(decimal||'00'));
+                                scaleXMain = scaleX;
+                            }
+                            
+                            // Compute Y scaling of currency+decimal and main parts.
+                            var scaleY     = (height                  - padY*2) / lineHeight,
+                                scaleYMain = (fieldOptions.mainHeight - padY*2) / lineHeight;
+                                
+                            // Output parts.
+                            var x = 0;
+                            
+                            // - Currency.
+                            var matrix2 = matrix.clone();
+                            matrix2.scale(scaleX, scaleY);
+                            matrix2.translate(0, lineHeight / 2); // Vertical centering
+                            paper.text(x, 0, currency)
+                                .transform(matrix2.toTransformString())
+                                .attr(attr);
+                            x += widthOfString(currency);
+                            fieldCoords[id + ".currency"] = left + x*scaleX;
+                            
+                            // - Main.
+                            matrix2 = matrix.clone();
+                            matrix2.scale(scaleXMain, scaleYMain);
+                            matrix2.translate(0, lineHeight / 2); // Vertical centering
+                            paper.text(x*scaleX/scaleXMain, 0, main)
+                                .transform(matrix2.toTransformString())
+                                .attr(attr);
+                            x += widthOfString(main)*scaleXMain/scaleX;
+                            fieldCoords[id + ".separator"] = left + x*scaleX;
+                            
+                            // - Decimal.
+                            matrix.scale(scaleX, scaleY);
+                            matrix.translate(0, lineHeight / 2); // Vertical centering
+                            paper.text(x, 0, decimal||'')
+                                .transform(matrix.toTransformString())
+                                .attr(attr);
+                        }
+                    }
+                }
+            }           
+            
+            // Done!
+            doneFields[id] = true;
+            progress = true;
+        }
+        
+        // Check progress.
+        if (!progress) {
+            // No progress, stop there.
+            break;
+        }
+    }
+    
+    // Done.
+    var svg = paper.canvas.outerHTML;
+    paper.clear();
+    return svg;
 }

@@ -101,15 +101,24 @@
 /** Global max length for text fields. */
 var globalMaxLength = 100;
 
-/** Load our fonts. */
-var SansPosterBold = new FontFile("fonts/SansPosterBold.ttf", fontLoaded);
-var OpenSansExtraBold = new FontFile("fonts/OpenSans-ExtraBold.ttf", fontLoaded);
-var RubikBlack = new FontFile("fonts/Rubik-Black.ttf", fontLoaded); // Hebrew
-var ChangaExtraBold = new FontFile("fonts/Changa-ExtraBold.ttf", fontLoaded); // Arabic
-// var JejuGothicRegular = new FontFile("fonts/JejuGothic-Regular.ttf", fontLoaded); // Korean
-// var MSMHeiBold = new FontFile("fonts/MSMHei-Bold.ttf", fontLoaded); // Chinese
+var FontSet1;
+var pdfMode = true;//FIXME
+if (pdfMode) {
+	/** Load our fonts. */
+	var SansPosterBold = new FontFile("fonts/SansPosterBold.ttf", fontLoaded);
+	var OpenSansExtraBold = new FontFile("fonts/OpenSans-ExtraBold.ttf", fontLoaded);
+	var RubikBlack = new FontFile("fonts/Rubik-Black.ttf", fontLoaded); // Hebrew
+	var ChangaExtraBold = new FontFile("fonts/Changa-ExtraBold.ttf", fontLoaded); // Arabic
+	// var JejuGothicRegular = new FontFile("fonts/JejuGothic-Regular.ttf", fontLoaded); // Korean
+	// var MSMHeiBold = new FontFile("fonts/MSMHei-Bold.ttf", fontLoaded); // Chinese
 
-var FontSet1 = [SansPosterBold, RubikBlack, OpenSansExtraBold, ChangaExtraBold];
+	FontSet1 = [SansPosterBold, RubikBlack, OpenSansExtraBold, ChangaExtraBold];
+} else {
+	FontSet1 = '"Sans Poster Bold JL", "Rubik", "Open Sans", "Changa", "Mplus 1p"';
+	if (typeof(document) !== 'undefined' && document.fonts) {
+		document.fonts.addEventListener('loadingdone', fontLoaded);
+	}
+}
 
 var templates = {
 	"Template 1" : {

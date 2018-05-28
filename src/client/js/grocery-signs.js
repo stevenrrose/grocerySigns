@@ -141,6 +141,23 @@ function loadPDF(url, container, options) {
 
 /*
  *
+ * SVG Generation.
+ *
+ */
+
+/**
+ *  Render SVG in a container.
+ *  
+ *  @param svg          SVG content render.
+ *  @param container    Container.
+ */
+function renderSVG(svg, container, options) {
+    /* Insert SVG object. */
+    $(container).empty().append(svg);
+}
+
+/*
+ *
  * Interface functions.
  *
  */
@@ -188,7 +205,7 @@ function loadImages(state) {
 }
 
 /**
- *  Get file name for the given page.
+ *  Get file name for the given page (without extension).
  *  
  *  @param index    Page index.
  *  
@@ -204,7 +221,7 @@ function getFileName(index) {
     
     if (!currentState || !currentState.id) {
         // Manual input.
-        return templateName + ".pdf";
+        return templateName;
     }
     
     var components = [];
@@ -214,7 +231,7 @@ function getFileName(index) {
     if (currentState.randomize) {
         components.push(currentState.seed);
     }
-    return components.join('-') + '.pdf';
+    return components.join('-');
 }
 
 /**
@@ -235,11 +252,36 @@ function downloadPDF(index) {
     
     // Eventually download the blob as PDF.
     stream.on('finish', function() {
-        saveAs(stream.toBlob('application/pdf'), fileName);
+        saveAs(stream.toBlob('application/pdf'), fileName + '.pdf');
     });
 
     // Generate the PDF.
     generatePDF(stream, templates[templateName], scrapedTexts, scrapedImages, {color: color});
+}
+
+/**
+ *  Download the SVG for the given page.
+ *  
+ *  @param index    Page index.
+ *  
+ *  @see generateSVG()
+ *  @see getFileName()
+ */
+function downloadSVG(index) {
+    var templateName = $("#page-template-" + index).val();
+    var color = $("input[name='page-color-" + index + "']:checked").val();
+    var fileName = getFileName(index);
+    
+    // Output to blob.
+    var stream = blobStream();
+    
+    // Eventually download the blob as PDF.
+    stream.on('finish', function() {
+        saveAs(stream.toBlob('image/svg+xml'), fileName + '.svg');
+    });
+
+    // Generate the PDF.
+    generateSVG(stream, templates[templateName], scrapedTexts, scrapedImages, {color: color});
 }
 
 /**
@@ -257,14 +299,46 @@ function refreshFrame(index) {
     var templateName = $("#page-template-" + index).val();
     var color = $("input[name='page-color-" + index + "']:checked").val();
     var fileName = getFileName(index);
-    
-    // Output to blob.
-    var stream = blobStream();
-    
-    // Eventually output the blob into given container.
-    stream.on('finish', function() {
+
+    if (pdfMode) {    
+        // Output to blob.
+        var stream = blobStream();
+        
+        // Eventually output the blob into given container.
+        stream.on('finish', function() {
+            // Get & remember blob object.
+            var blob = stream.toBlob('application/pdf');
+            $(container).data("blob", blob);
+            
+            // Clear previous blob URL and remember new one.
+            var url = $(container).data("blobUrl");
+            if (url) {
+                window.URL.revokeObjectURL(url);
+            }
+            url = window.URL.createObjectURL(blob);
+            $(container).data("blobUrl", url);
+
+            // Render blob URL into container.
+            renderPDF(url, container);
+            
+            // Set link attributes.
+            var index = $(container).data("index");
+            $("#page-download-" + index)
+                .attr('href', url)
+                .attr('target', '_blank')
+                .attr('download', fileName + '.pdf');
+        });
+
+        // Generate the PDF.
+        generatePDF(stream, templates[templateName], scrapedTexts, scrapedImages, {color: color});
+        
+    } else {
+
+        // Generate the PDF.
+        var svg = generateSVG(templates[templateName], scrapedTexts, scrapedImages, {color: color});
+
         // Get & remember blob object.
-        var blob = stream.toBlob('application/pdf');
+        var blob = new Blob([svg], {type: "image/svg+xml"});
         $(container).data("blob", blob);
         
         // Clear previous blob URL and remember new one.
@@ -276,18 +350,16 @@ function refreshFrame(index) {
         $(container).data("blobUrl", url);
 
         // Render blob URL into container.
-        renderPDF(url, container);
-        
+        renderSVG(svg, container);
+            
         // Set link attributes.
         var index = $(container).data("index");
         $("#page-download-" + index)
             .attr('href', url)
             .attr('target', '_blank')
-            .attr('download', fileName);
-    });
+            .attr('download', fileName + '.svg'); //FIXME server-size printing
+    }
 
-    // Generate the PDF.
-    generatePDF(stream, templates[templateName], scrapedTexts, scrapedImages, {color: color});
 }
 
 /**
