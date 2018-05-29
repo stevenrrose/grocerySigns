@@ -713,11 +713,11 @@ function generateSVG(template, fields, images, globalOptions) {
             if (DEBUG) {
                 paper.rect(0, 0, width, height)
                     .transform(matrix.toTransformString())
-                    .attr('stroke', 'black');
-                if (field.mainHeight) {
+                        .attr({'stroke': 'black'});
+                    if (field.mainHeight) {
                     paper.rect(0, 0, width, field.mainHeight)
                         .transform(matrix.toTransformString())
-                        .attr('stroke', 'black');
+                        .attr({'stroke': 'black'});
                 }
             }
             
@@ -726,7 +726,7 @@ function generateSVG(template, fields, images, globalOptions) {
                 // White on black.
                 paper.rect(0, 0, width, height)
                     .transform(matrix.toTransformString())
-                    .attr('fill', fieldOptions.color);
+                    .attr({'fill': fieldOptions.color, 'stroke': 'none'});
                 fill = 'white';
             } else {
                 fill = fieldOptions.color;

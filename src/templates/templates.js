@@ -102,7 +102,6 @@
 var globalMaxLength = 100;
 
 var FontSet1;
-var pdfMode = true;//FIXME
 if (pdfMode) {
 	/** Load our fonts. */
 	var SansPosterBold = new FontFile("fonts/SansPosterBold.ttf", fontLoaded);

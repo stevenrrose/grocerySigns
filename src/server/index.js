@@ -1,15 +1,31 @@
+(async() => {
+
 process.chdir(__dirname);
 
 var request = require('request');
 var express = require('express');
 var bodyParser = require('body-parser');
 var swig = require('swig');
+var puppeteer = require('puppeteer');
 
 var scraper = require('./scraper.js');
 var templates = require('./templates.js');
 
 // Used to debug outgoing requests.
 // request.debug = true;
+
+/*
+ *
+ * Headless Chrome.
+ * 
+ */
+
+const browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
+const browserPage = await browser.newPage();
+// Change the user agent to fix issue with fonts: headless loads TTF instead
+// of woff2 and setst the wrong unicodeRange.
+let agent = await browser.userAgent();
+await browserPage.setUserAgent(agent.replace("HeadlessChrome", "Chrome"));
 
 /**
  * 
@@ -436,11 +452,31 @@ app.get('/:provider/:id', function(req, res, next) {
 /**
  * /:provider/:id/:template.pdf?randomize={seed}&color={color}
  * 
- * Permalinks to PDF (generated on the fly), crawlable from the HTML page.
- * 
- * TODO factorize code with HTML version
+ * Permalinks to PDF (client-side generated on the fly), crawlable from the HTML
+ * page. Uses Headless Chrome to convert SVG to PDF. 
  */
-app.get('/:provider/:id/:template.pdf', function(req, res, next) {
+app.get('/:provider/:id/:template.pdf', async function(req, res, next) {
+    const templateName = req.params.template;
+    if (!templates.templates[templateName]) {
+        // No such template.
+        return next();
+    }
+    const template = templates.templates[templateName];
+
+    // Forward to SVG version and convert to PDF.
+    const url = req.originalUrl.replace(".pdf", ".svg");
+    const response = await browserPage.goto('http://localhost:3000' + url, {waitUntil: 'networkidle0'});// FIXME URL
+    res.set('Content-Type', 'application/pdf');
+    res.set('X-Scrape-URL', response.headers()['x-scrape-url'])
+    res.send(await browserPage.pdf({width: template.width, height: template.height, pageRanges: '1'}));
+});
+
+/**
+ * /:provider/:id/:template.old.pdf?randomize={seed}&color={color}
+ * 
+ * PDFKitbased PDF generation.
+ */
+app.get('/:provider/:id/:template.old.pdf', function(req, res, next) {
     var provider = req.params.provider;
     var id = req.params.id;
     var template = req.params.template;
@@ -524,6 +560,119 @@ app.get('/:provider/:id/:template.pdf', function(req, res, next) {
                 }
             }
             generatePDF(res, templates.templates[template], fields, images, options);
+        });
+    });
+});
+
+/**
+ * svgPageTpl
+ * 
+ * Template file for *.svg HTML page.
+ */
+var svgPageTpl = swig.compileFile('../client/svg.html');
+
+/**
+ * /:provider/:id/:template.svg?randomize={seed}&color={color}
+ * 
+ * Permalinks to SVG (client-side generated on the fly).
+ * 
+ * TODO factorize code with HTML version
+ */
+app.get('/:provider/:id/:template.svg', function(req, res, next) {
+    var provider = req.params.provider;
+    var id = req.params.id;
+    var template = req.params.template;
+    var randomize, seed;
+    if (typeof(req.query.randomize) === 'undefined') {
+        randomize = false;
+    } else {
+        randomize = true;
+        seed = parseInt(req.query.randomize);
+        if (isNaN(seed)) return next('Invalid seed');
+    }
+    var options = {}
+    if (typeof(req.query.color) !== 'undefined') {
+        options.color = req.query.color;
+    }
+    
+    if (!providers.find(function(e) {return (e == provider);})) {
+        // No such provider.
+        return next();
+    }
+    if (!templates.templates[template]) {
+        // No such template.
+        return next();
+    }
+    
+    // Try to find scraped result for the given provider/id.
+    ScraperResult.findOne({provider: provider, id: id}, function(err, result) {
+        if (err) return next(err);
+        
+        if (!result) return next();
+
+        // Found! Generate PDF with scraped data.
+        console.log("Found cached scraper result", provider, id);
+        
+        seed = (randomize ? seed : result.seed);
+        
+        // Shuffle sentences.
+        var sentences;
+        if (randomize) {
+            sentences = shuffleSentences(result.sentences, seed);
+        } else {
+            // Use sentences in order.
+            sentences = result.sentences;
+        }
+        
+        // Build field map.
+        var fields = {};
+        var i = 0;
+        for (var field of templates.fields) {
+            fields[field] = sentences[i++];
+        }
+        
+        templates.computeActualMaxFieldLengths(seed);
+        
+        // Write header with canonical scrape URL.
+        var scrapeURL = 
+              '/' + encodeURIComponent(provider) 
+            + '/' + encodeURIComponent(id);
+        if (randomize) {
+            scrapeURL += '?randomize=' + seed;
+        }
+        res.setHeader('X-Scrape-URL', scrapeURL);
+        
+        if (result.images.length == 0) {
+            // No image.
+            res.send(svgPageTpl({ parameters : JSON.stringify({
+                template: template,
+                fields: fields,
+                images: [],
+                options: options
+            })}));
+            return;
+        }
+        // Fetch all image URLs from DB.
+        Image.find({url: {$in: result.images}}, function(err, results) {
+            var images = [];
+            if (!err && results) {
+                // Ensure that images are in the same order as URLs.
+                var imagesByUrl = {};
+                for (image of results) {
+                    console.log("Found cached image", image.url, image.type, image.data.length);
+                    var data = 'data:' + image.type + ';base64,' + Buffer.from(image.data).toString('base64');
+                    imagesByUrl[image.url] = {url: image.url, type: image.type, data: data};
+                }
+                for (url of result.images) {
+                    images.push(imagesByUrl[url]);
+                }
+            }
+            res.send(svgPageTpl({ parameters : JSON.stringify({
+                template: template,
+                fields: fields,
+                images: images,
+                options: options
+            })}));
         });
     });
 });
@@ -719,3 +868,5 @@ var server = app.listen(3000, function () {
 
   console.log('Grocery Stores app listening on http://%s:%s', host, port);
 });
+
+})();

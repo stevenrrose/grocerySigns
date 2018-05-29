@@ -23,6 +23,7 @@ global.FontFile = require("../common/FontFile.js");
 global.ImageFile = require("../common/ImageFile.js");
 global.fontLoaded = function() {}
 global.imageLoaded = function() {}
+global.pdfMode = true;
 include('../templates/templates.js');
 
 // Export the above *global.templates* variable defined in above file.
