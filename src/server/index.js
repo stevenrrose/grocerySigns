@@ -128,45 +128,67 @@ app.get('/scraper/fetch', (req, res, next) => {
  * 
  * @see Image
  */
-app.get('/scraper/fetchImage', (req, res, next) => {
+app.get('/scraper/fetchImage', async (req, res, next) => {
     var url = req.query.url;
     var provider = req.query.provider;
     var id = req.query.id;
     
     // Try to find existing image from its URL.
-    Image.findOne({url: url}).then(image => {
-        if (image) {
-            // Found!
-            console.log("Found cached image", url, image.type, image.data.length);
-            res.contentType(image.type);
-            res.send(image.data);
-            return;
+    const image = await Image.findOne({url: url});
+    if (image) {
+        // Found!
+        console.log("Found cached image", url, image.type, image.data.length);
+        res.contentType(image.type);
+        res.send(image.data);
+        return;
+    }
+    
+    // Ensure that the requested image belongs to the given provider/id scraper result,
+    // to prevent abuse.
+    const result = await ScraperResult.findOne({provider: provider, id: id});
+    if (!result || !result.images || result.images.indexOf(url) === -1) {
+        console.log("Rejecting image " + url);
+        return res.status(403).end();
+    }
+
+    // Image belongs to scraper result, fetch & store remote data.
+    request({url: url, encoding: 'binary'}, async (error, response, body) => {
+        if (!error && response.statusCode === 200) {
+            console.log("Got remote image", url);
+            var image = new Image;
+            image.url = url;
+            image.type = response.headers['content-type'];
+            image.data = new Buffer(body, 'binary');
+            await image.save();
+            console.log("Saved image to MongoDB", url);
         }
-        
-        // Ensure that the requested image belongs to the given provider/id scraper result,
-        // to prevent abuse.
-        ScraperResult.findOne({provider: provider, id: id}).then(result => {
-            if (!result || !result.images || result.images.indexOf(url) == -1) {
-                console.log("Rejecting image " + url);
-                return res.status(403).end();
-            }
-        
-            // Image belongs to scraper result, fetch & store remote data.
-            request({url: url, encoding: 'binary'}, (error, response, body) => {
-                if (!error && response.statusCode == 200) {
-                    console.log("Got remote image", url);
-                    var image = new Image;
-                    image.url = url;
-                    image.type = response.headers['content-type'];
-                    image.data = new Buffer(body, 'binary');
-                    image.save().then(() => {
-                        console.log("Saved image to MongoDB", url);
-                    });
-                }
-            }).pipe(res);
-        });
-    });
+    }).pipe(res);
 });
+
+/**
+ * Get cached data for given images.
+ *  
+ * @param {*} images List of image URLs. 
+ */
+async function getCachedImages(images) {
+    if (images.length === 0) {
+        return [];
+    }
+    const results = [];
+    const cachedImages = await Image.find({url: {$in: images}});
+    if (cachedImages) {
+        // Ensure that images are in the same order as URLs.
+        var imagesByUrl = {};
+        for (image of cachedImages) {
+            console.log("Found cached image", image.url, image.type, image.data.length);
+            imagesByUrl[image.url] = {url: image.url, type: image.type, data: image.data};
+        }
+        for (url of images) {
+            results.push(imagesByUrl[url]);
+        }
+    }
+    return results;
+}
 
 /**
  * /scraper/bookmark
@@ -175,7 +197,7 @@ app.get('/scraper/fetchImage', (req, res, next) => {
  * 
  * @see ScraperResult
  */
-app.post('/scraper/bookmark', (req, res, next) => {
+app.post('/scraper/bookmark', async (req, res, next) => {
     var result = new ScraperResult;
 
     // Basic validation.
@@ -209,11 +231,10 @@ app.post('/scraper/bookmark', (req, res, next) => {
         return res.status(400).end();
     }
         
-    result.save().then(() => {
-        console.log("Saved scraper result to MongoDB", req.body);
-        res.location('/' + req.body.provider + '/' + req.body.id);
-        res.send('OK');
-    });
+    await result.save();
+    console.log("Saved scraper result to MongoDB", req.body);
+    res.location('/' + req.body.provider + '/' + req.body.id);
+    res.send('OK');
 });
 
 /**
@@ -225,7 +246,7 @@ app.post('/scraper/bookmark', (req, res, next) => {
  * @see ScraperResult
  * @see Bookmark
  */
-app.post('/scraper/bookmarkSeed', (req, res, next) => {
+app.post('/scraper/bookmarkSeed', async (req, res, next) => {
     var provider = req.body.provider;
     var id = req.body.id;
     var seed = req.body.seed;
@@ -244,25 +265,23 @@ app.post('/scraper/bookmarkSeed', (req, res, next) => {
     bookmark.provider = provider;
     bookmark.id = id;
     bookmark.seed = seed;
-    bookmark.save().then(() => {
+    try {
+        await bookmark.save();
         console.log("Bookmark saved to MongoDB by caller app " + caller);
-    }).catch(err => {
+    } catch(err) {
         console.error("Error while saving bookmark to MongoDB", err);
-    });
+    };
     
     if (typeof(seed) !== 'undefined') {
         // Add seed to the scraped result's bookmark set.
-        ScraperResult.findOneAndUpdate({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false}).then(result => {
-            if (!result) return next();
+        const result = await ScraperResult.findOneAndUpdate({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false});
+        if (!result) return next();
 
-            if (result.nModified) {
-                console.log("Bookmark added to scraper result in MongoDB", req.body);
-            }
-            res.send('OK');
-        });
-    } else {
-        res.send('OK');
+        if (result.nModified) {
+            console.log("Bookmark added to scraper result in MongoDB", req.body);
+        }
     }
+    res.send('OK');
 });
 
 /**
@@ -274,7 +293,7 @@ app.post('/scraper/bookmarkSeed', (req, res, next) => {
  * @see Bookmark
  * @see /scraper/bookmarkSeed
  */
-app.get('/history', (req, res, next) => {
+app.get('/history', async (req, res, next) => {
     // Basic validation.
     var since = req.query.since;
     try {
@@ -296,9 +315,8 @@ app.get('/history', (req, res, next) => {
     if (caller) {
         query.where({caller: caller});
     }
-    query.exec().then(bookmarks => {
-        res.send(bookmarks);
-    });
+    const bookmarks = await query.exec();
+    res.send(bookmarks);
 });
 
 /**
@@ -329,7 +347,7 @@ app.get('/', (req, res) => {
 app.get('/:provider', (req, res, next) => {
     var provider = req.params.provider;
     
-    if (!providers.find(function(e) {return (e == provider);})) {
+    if (!providers.find(function(e) {return (e === provider);})) {
         // No such provider.
         return next();
     }
@@ -349,7 +367,7 @@ app.get('/:provider', (req, res, next) => {
  * Static HTML page with input fields filled with scraped sentences, and 
  * permalinks to PDFs and thumbnails.
  */
-app.get('/:provider/:id', (req, res, next) => {
+app.get('/:provider/:id', async (req, res, next) => {
     console.log(req.params);
     var provider = req.params.provider;
     var id = req.params.id;
@@ -362,77 +380,76 @@ app.get('/:provider/:id', (req, res, next) => {
         if (isNaN(seed)) return next('Invalid seed');
     }
     
-    if (!providers.find(function(e) {return (e == provider);})) {
+    if (!providers.find(function(e) {return (e === provider);})) {
         // No such provider.
         return next();
     }
     
     // Try to find scraped result for the given provider/id.
-    ScraperResult.findOne({provider: provider, id: id}).then(result => {
-        if (!result) return next();
+    const result = await ScraperResult.findOne({provider: provider, id: id});
+    if (!result) return next();
 
-        // Found! Generate page with scraped data.
-        console.log("Found cached scraper result", provider, id);
-        
-        seed = (randomize ? seed : result.seed);
-        
-        // Shuffle sentences.
-        var sentences;
-        if (randomize) {
-            sentences = shuffleSentences(result.sentences, seed);
+    // Found! Generate page with scraped data.
+    console.log("Found cached scraper result", provider, id);
+    
+    seed = (randomize ? seed : result.seed);
+    
+    // Shuffle sentences.
+    var sentences;
+    if (randomize) {
+        sentences = shuffleSentences(result.sentences, seed);
+    } else {
+        // Use sentences in order.
+        sentences = result.sentences;
+    }
+    
+    // Build state object.
+    var state = {
+        provider: provider,
+        id: id,
+        randomize: randomize,
+        seed: seed,
+        sentences: result.sentences,
+        images: result.images,
+        bookmarks: result.bookmarks,
+    };
+    
+    // Build prev/next links if any.
+    var prevLink, nextLink;
+    if (result.bookmarks.length) {
+        if (!randomize) {
+            // Next is first entry in bookmarks.
+            nextLink = provider + '/' + id + '?randomize=' + result.bookmarks[0];
         } else {
-            // Use sentences in order.
-            sentences = result.sentences;
-        }
-        
-        // Build state object.
-        var state = {
-            provider: provider,
-            id: id,
-            randomize: randomize,
-            seed: seed,
-            sentences: result.sentences,
-            images: result.images,
-            bookmarks: result.bookmarks,
-        };
-        
-        // Build prev/next links if any.
-        var prevLink, nextLink;
-        if (result.bookmarks.length) {
-            if (!randomize) {
-                // Next is first entry in bookmarks.
-                nextLink = provider + '/' + id + '?randomize=' + result.bookmarks[0];
-            } else {
-                // Find current seed in bookmarks list.
-                var i = result.bookmarks.indexOf(seed);
-                if (i != -1) {
-                    // Found!
-                    if (i == 0) {
-                        // Prev is non-randomized page.
-                        prevLink = provider + '/' + id;
-                    } else {
-                        prevLink = provider + '/' + id + '?randomize=' + result.bookmarks[i-1];
-                    }
-                    if (i < result.bookmarks.length-1) {
-                        nextLink = provider + '/' + id + '?randomize=' + result.bookmarks[i+1];
-                    }
+            // Find current seed in bookmarks list.
+            var i = result.bookmarks.indexOf(seed);
+            if (i != -1) {
+                // Found!
+                if (i === 0) {
+                    // Prev is non-randomized page.
+                    prevLink = provider + '/' + id;
+                } else {
+                    prevLink = provider + '/' + id + '?randomize=' + result.bookmarks[i-1];
+                }
+                if (i < result.bookmarks.length-1) {
+                    nextLink = provider + '/' + id + '?randomize=' + result.bookmarks[i+1];
                 }
             }
         }
-        
-        // Render & return template.
-        res.send(mainPageTpl({
-            providers: providers, 
-            fields: templates.fields,
-            templates: templates.templates,
-            active_provider: provider,
-            active_sentences: sentences,
-            active_state: state,
-            state: JSON.stringify(state),
-            prev: prevLink,
-            next: nextLink,
-        }));
-    });
+    }
+    
+    // Render & return template.
+    res.send(mainPageTpl({
+        providers: providers, 
+        fields: templates.fields,
+        templates: templates.templates,
+        active_provider: provider,
+        active_sentences: sentences,
+        active_state: state,
+        state: JSON.stringify(state),
+        prev: prevLink,
+        next: nextLink,
+    }));
 });
 
 /**
@@ -462,7 +479,7 @@ app.get('/:provider/:id/:template.pdf', async (req, res, next) => {
  * 
  * PDFKitbased PDF generation.
  */
-app.get('/:provider/:id/:template.old.pdf', (req, res, next) => {
+app.get('/:provider/:id/:template.old.pdf', async (req, res, next) => {
     var provider = req.params.provider;
     var id = req.params.id;
     var template = req.params.template;
@@ -479,7 +496,7 @@ app.get('/:provider/:id/:template.old.pdf', (req, res, next) => {
         options.color = req.query.color;
     }
     
-    if (!providers.find(function(e) {return (e == provider);})) {
+    if (!providers.find(function(e) {return (e === provider);})) {
         // No such provider.
         return next();
     }
@@ -489,63 +506,44 @@ app.get('/:provider/:id/:template.old.pdf', (req, res, next) => {
     }
     
     // Try to find scraped result for the given provider/id.
-    ScraperResult.findOne({provider: provider, id: id}).then(result => {
-        if (!result) return next();
+    const result = await ScraperResult.findOne({provider: provider, id: id});
+    if (!result) return next();
 
-        // Found! Generate PDF with scraped data.
-        console.log("Found cached scraper result", provider, id);
-        
-        seed = (randomize ? seed : result.seed);
-        
-        // Shuffle sentences.
-        var sentences;
-        if (randomize) {
-            sentences = shuffleSentences(result.sentences, seed);
-        } else {
-            // Use sentences in order.
-            sentences = result.sentences;
-        }
-        
-        // Build field map.
-        var fields = {};
-        var i = 0;
-        for (var field of templates.fields) {
-            fields[field] = sentences[i++];
-        }
-        
-        templates.computeActualMaxFieldLengths(seed);
-        
-        // Write header with canonical scrape URL.
-        var scrapeURL = 
-              '/' + encodeURIComponent(provider) 
-            + '/' + encodeURIComponent(id);
-        if (randomize) {
-            scrapeURL += '?randomize=' + seed;
-        }
-        res.setHeader('X-Scrape-URL', scrapeURL);
-        
-        if (result.images.length == 0) {
-            // No image.
-            generatePDF(res, templates.templates[template], fields, [], options);
-            return;
-        }
-        // Fetch all image URLs from DB.
-        Image.find({url: {$in: result.images}}).then(results => {
-            var images = [];
-            if (results) {
-                // Ensure that images are in the same order as URLs.
-                var imagesByUrl = {};
-                for (image of results) {
-                    console.log("Found cached image", image.url, image.type, image.data.length);
-                    imagesByUrl[image.url] = {url: image.url, type: image.type, data: image.data};
-                }
-                for (url of result.images) {
-                    images.push(imagesByUrl[url]);
-                }
-            }
-            generatePDF(res, templates.templates[template], fields, images, options);
-        });
-    });
+    // Found! Generate PDF with scraped data.
+    console.log("Found cached scraper result", provider, id);
+    
+    seed = (randomize ? seed : result.seed);
+    
+    // Shuffle sentences.
+    var sentences;
+    if (randomize) {
+        sentences = shuffleSentences(result.sentences, seed);
+    } else {
+        // Use sentences in order.
+        sentences = result.sentences;
+    }
+    
+    // Build field map.
+    var fields = {};
+    var i = 0;
+    for (var field of templates.fields) {
+        fields[field] = sentences[i++];
+    }
+    
+    templates.computeActualMaxFieldLengths(seed);
+    
+    // Write header with canonical scrape URL.
+    var scrapeURL = 
+            '/' + encodeURIComponent(provider) 
+        + '/' + encodeURIComponent(id);
+    if (randomize) {
+        scrapeURL += '?randomize=' + seed;
+    }
+    res.setHeader('X-Scrape-URL', scrapeURL);
+    
+    // Fetch all image URLs from DB.
+    const images = await getCachedImages(result.images);
+    generatePDF(res, templates.templates[template], fields, images, options);
 });
 
 /**
@@ -562,7 +560,7 @@ var svgPageTpl = swig.compileFile('../client/svg.html');
  * 
  * TODO factorize code with HTML version
  */
-app.get('/:provider/:id/:template.svg', (req, res, next) => {
+app.get('/:provider/:id/:template.svg', async (req, res, next) => {
     var provider = req.params.provider;
     var id = req.params.id;
     var template = req.params.template;
@@ -579,7 +577,7 @@ app.get('/:provider/:id/:template.svg', (req, res, next) => {
         options.color = req.query.color;
     }
     
-    if (!providers.find(function(e) {return (e == provider);})) {
+    if (!providers.find(function(e) {return (e === provider);})) {
         // No such provider.
         return next();
     }
@@ -589,74 +587,49 @@ app.get('/:provider/:id/:template.svg', (req, res, next) => {
     }
     
     // Try to find scraped result for the given provider/id.
-    ScraperResult.findOne({provider: provider, id: id}).then(result => {
-        if (!result) return next();
+    const result = await ScraperResult.findOne({provider: provider, id: id});
+    if (!result) return next();
 
-        // Found! Generate PDF with scraped data.
-        console.log("Found cached scraper result", provider, id);
-        
-        seed = (randomize ? seed : result.seed);
-        
-        // Shuffle sentences.
-        var sentences;
-        if (randomize) {
-            sentences = shuffleSentences(result.sentences, seed);
-        } else {
-            // Use sentences in order.
-            sentences = result.sentences;
-        }
-        
-        // Build field map.
-        var fields = {};
-        var i = 0;
-        for (var field of templates.fields) {
-            fields[field] = sentences[i++];
-        }
-        
-        templates.computeActualMaxFieldLengths(seed);
-        
-        // Write header with canonical scrape URL.
-        var scrapeURL = 
-              '/' + encodeURIComponent(provider) 
-            + '/' + encodeURIComponent(id);
-        if (randomize) {
-            scrapeURL += '?randomize=' + seed;
-        }
-        res.setHeader('X-Scrape-URL', scrapeURL);
-        
-        if (result.images.length == 0) {
-            // No image.
-            res.send(svgPageTpl({ parameters : JSON.stringify({
-                template: template,
-                fields: fields,
-                images: [],
-                options: options
-            })}));
-            return;
-        }
-        // Fetch all image URLs from DB.
-        Image.find({url: {$in: result.images}}).then(results => {
-            var images = [];
-            if (results) {
-                // Ensure that images are in the same order as URLs.
-                var imagesByUrl = {};
-                for (image of results) {
-                    console.log("Found cached image", image.url, image.type, image.data.length);
-                    var data = 'data:' + image.type + ';base64,' + Buffer.from(image.data).toString('base64');
-                    imagesByUrl[image.url] = {url: image.url, type: image.type, data: data};
-                }
-                for (url of result.images) {
-                    images.push(imagesByUrl[url]);
-                }
-            }
-            res.send(svgPageTpl({ parameters : JSON.stringify({
-                template: template,
-                fields: fields,
-                images: images,
-                options: options
-            })}));
-        });
-    });
+    // Found! Generate PDF with scraped data.
+    console.log("Found cached scraper result", provider, id);
+    
+    seed = (randomize ? seed : result.seed);
+    
+    // Shuffle sentences.
+    var sentences;
+    if (randomize) {
+        sentences = shuffleSentences(result.sentences, seed);
+    } else {
+        // Use sentences in order.
+        sentences = result.sentences;
+    }
+    
+    // Build field map.
+    var fields = {};
+    var i = 0;
+    for (var field of templates.fields) {
+        fields[field] = sentences[i++];
+    }
+    
+    templates.computeActualMaxFieldLengths(seed);
+    
+    // Write header with canonical scrape URL.
+    var scrapeURL = 
+            '/' + encodeURIComponent(provider) 
+        + '/' + encodeURIComponent(id);
+    if (randomize) {
+        scrapeURL += '?randomize=' + seed;
+    }
+    res.setHeader('X-Scrape-URL', scrapeURL);
+    
+    // Fetch all image URLs from DB.
+    const images = await getCachedImages(result.images);
+    res.send(svgPageTpl({ parameters : JSON.stringify({
+        template: template,
+        fields: fields,
+        images: [],
+        options: options
+    })}));
 });
 
 /**
@@ -680,44 +653,43 @@ app.get('/random', (req, res) => {
  * 
  * Pick & redirect to random page.
  */
-app.get('/random.pdf', (req, res, next) => {
+app.get('/random.pdf', async (req, res, next) => {
     // Try to find scrape with nonempty bookmark list.
-    var find = () => {
+    var find = async () => {
         // Random seed value used to select the scrape.
         var seed = generateRandomSeed();
         
-        ScraperResult.findOne({seed: {$gte: seed}, $nor: [ {bookmarks: {$exists: false}}, {bookmarks: {$size: 0}} ]}, "provider id bookmarks").then(result => {
-            if (!result) {
-                // Try again.
-                find();
-                return;
-            }
-            
-            // Found, pick a random bookmarked seed.
-            var params = {}
-            params.provider = result.provider;
-            params.id = result.id;
-            params.seed = result.bookmarks[Math.floor(Math.random() * result.bookmarks.length)];
-            
-            // Choose random template and color.
-            var templateNames = Object.keys(templates.templates);
-            params.template = templateNames[Math.floor(Math.random() * templateNames.length)];
-            var colors = ["black", "red", "blue"];
-            params.color = colors[Math.floor(Math.random() * colors.length)];
-            
-            // Redirect to PDF permalink.
-            var pdfURL = 
-                      '/' + encodeURIComponent(params.provider) 
-                    + '/' + encodeURIComponent(params.id)
-                    + '/' + encodeURIComponent(params.template) + '.pdf'
-                    + '?randomize=' + params.seed
-                    + '&color=' + params.color;
-            res.writeHead(307, {
-                'Location': pdfURL,
-                'Pragma': 'no-cache'
-            });
-            res.end();
+        const result = await ScraperResult.findOne({seed: {$gte: seed}, $nor: [ {bookmarks: {$exists: false}}, {bookmarks: {$size: 0}} ]}, "provider id bookmarks");
+        if (!result) {
+            // Try again.
+            find();
+            return;
+        }
+        
+        // Found, pick a random bookmarked seed.
+        var params = {}
+        params.provider = result.provider;
+        params.id = result.id;
+        params.seed = result.bookmarks[Math.floor(Math.random() * result.bookmarks.length)];
+        
+        // Choose random template and color.
+        var templateNames = Object.keys(templates.templates);
+        params.template = templateNames[Math.floor(Math.random() * templateNames.length)];
+        var colors = ["black", "red", "blue"];
+        params.color = colors[Math.floor(Math.random() * colors.length)];
+        
+        // Redirect to PDF permalink.
+        var pdfURL = 
+                    '/' + encodeURIComponent(params.provider) 
+                + '/' + encodeURIComponent(params.id)
+                + '/' + encodeURIComponent(params.template) + '.pdf'
+                + '?randomize=' + params.seed
+                + '&color=' + params.color;
+        res.writeHead(307, {
+            'Location': pdfURL,
+            'Pragma': 'no-cache'
         });
+        res.end();
     };
     find();
 });
