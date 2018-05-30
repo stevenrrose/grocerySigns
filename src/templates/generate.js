@@ -613,6 +613,7 @@ function bestMatchingFont(fonts, text) {
  */
 function generateSVG(template, fields, images, globalOptions) {
     globalOptions = globalOptions||{};
+    if (globalOptions.color === '') globalOptions.color = 'black';
 
     // Create SVG document with template size.
     var paper = Raphael(0, 0, template.width, template.height);
