@@ -65,17 +65,17 @@ app.use('/scraper', express.static(__dirname + '/../scraper'));
  * 
  * Sitemap with all stored scrape pages.
  */
-app.get('/sitemap.txt', function(req, res) {
+app.get('/sitemap.txt', (req, res) => {
     // All URLs must be full, so get the base URL from the request headers.
     var baseUrl = req.protocol + '://' + req.get('Host') + '/';
     
     // Stream over all stored scrapes.
     var stream = ScraperResult.find({}, 'provider id').stream();
-    stream.on('error', function(err) {
+    stream.on('error', err => {
         return next();
     });
     var first = true;
-    stream.on('data', function(doc) {
+    stream.on('data', doc => {
         if (first) {
             // Write header and include the root URL.
             res.writeHead(200, {'Content-Type': 'text/plain'});
@@ -86,7 +86,7 @@ app.get('/sitemap.txt', function(req, res) {
         // Write scrape page URL.
         res.write(baseUrl + encodeURIComponent(doc.provider) + '/' + encodeURIComponent(doc.id) + '\n');
     });
-    stream.on('close', function() {
+    stream.on('close', () => {
         // Done.
         res.end();
     });
@@ -100,7 +100,7 @@ app.get('/sitemap.txt', function(req, res) {
  * 
  * @param url URL of page to retrieve
  */
-app.get('/scraper/fetch', function(req, res, next) {
+app.get('/scraper/fetch', (req, res, next) => {
     // Validate provided URL against each provider's URL pattern.
     var url = req.query.url;
     console.log(url);
@@ -128,15 +128,13 @@ app.get('/scraper/fetch', function(req, res, next) {
  * 
  * @see Image
  */
-app.get('/scraper/fetchImage', function(req, res, next) {
+app.get('/scraper/fetchImage', (req, res, next) => {
     var url = req.query.url;
     var provider = req.query.provider;
     var id = req.query.id;
     
     // Try to find existing image from its URL.
-    Image.findOne({url: url}, function(err, image) {
-        if (err) return next(err);
-        
+    Image.findOne({url: url}).then(image => {
         if (image) {
             // Found!
             console.log("Found cached image", url, image.type, image.data.length);
@@ -147,24 +145,21 @@ app.get('/scraper/fetchImage', function(req, res, next) {
         
         // Ensure that the requested image belongs to the given provider/id scraper result,
         // to prevent abuse.
-        ScraperResult.findOne({provider: provider, id: id}, function(err, result) {
-            if (err) return next(err);
-
+        ScraperResult.findOne({provider: provider, id: id}).then(result => {
             if (!result || !result.images || result.images.indexOf(url) == -1) {
                 console.log("Rejecting image " + url);
                 return res.status(403).end();
             }
         
             // Image belongs to scraper result, fetch & store remote data.
-            request({url: url, encoding: 'binary'}, function (error, response, body) {
+            request({url: url, encoding: 'binary'}, (error, response, body) => {
                 if (!error && response.statusCode == 200) {
                     console.log("Got remote image", url);
                     var image = new Image;
                     image.url = url;
                     image.type = response.headers['content-type'];
                     image.data = new Buffer(body, 'binary');
-                    image.save(function (err) {
-                        if (err) return next(err);
+                    image.save().then(() => {
                         console.log("Saved image to MongoDB", url);
                     });
                 }
@@ -180,7 +175,7 @@ app.get('/scraper/fetchImage', function(req, res, next) {
  * 
  * @see ScraperResult
  */
-app.post('/scraper/bookmark', function(req, res, next) {
+app.post('/scraper/bookmark', (req, res, next) => {
     var result = new ScraperResult;
 
     // Basic validation.
@@ -214,8 +209,7 @@ app.post('/scraper/bookmark', function(req, res, next) {
         return res.status(400).end();
     }
         
-    result.save(function (err) {
-        if (err) return next(err);
+    result.save().then(() => {
         console.log("Saved scraper result to MongoDB", req.body);
         res.location('/' + req.body.provider + '/' + req.body.id);
         res.send('OK');
@@ -231,7 +225,7 @@ app.post('/scraper/bookmark', function(req, res, next) {
  * @see ScraperResult
  * @see Bookmark
  */
-app.post('/scraper/bookmarkSeed', function(req, res, next) {
+app.post('/scraper/bookmarkSeed', (req, res, next) => {
     var provider = req.body.provider;
     var id = req.body.id;
     var seed = req.body.seed;
@@ -250,19 +244,15 @@ app.post('/scraper/bookmarkSeed', function(req, res, next) {
     bookmark.provider = provider;
     bookmark.id = id;
     bookmark.seed = seed;
-    bookmark.save(function (err) {
-        if (err) {
-            console.error("Error while saving bookmark to MongoDB");
-        } else {
-            console.log("Bookmark saved to MongoDB by caller app " + caller);
-        }
+    bookmark.save().then(() => {
+        console.log("Bookmark saved to MongoDB by caller app " + caller);
+    }).catch(err => {
+        console.error("Error while saving bookmark to MongoDB", err);
     });
     
     if (typeof(seed) !== 'undefined') {
         // Add seed to the scraped result's bookmark set.
-        ScraperResult.findOneAndUpdate({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false}, function(err, result) {
-            if (err) return next(err);
-
+        ScraperResult.findOneAndUpdate({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false}).then(result => {
             if (!result) return next();
 
             if (result.nModified) {
@@ -284,7 +274,7 @@ app.post('/scraper/bookmarkSeed', function(req, res, next) {
  * @see Bookmark
  * @see /scraper/bookmarkSeed
  */
-app.get('/history', function(req, res, next) {
+app.get('/history', (req, res, next) => {
     // Basic validation.
     var since = req.query.since;
     try {
@@ -306,9 +296,7 @@ app.get('/history', function(req, res, next) {
     if (caller) {
         query.where({caller: caller});
     }
-    query.exec(function(err, bookmarks) {
-        if (err) return next(err);
-
+    query.exec().then(bookmarks => {
         res.send(bookmarks);
     });
 });
@@ -325,7 +313,7 @@ var mainPageTpl = swig.compileFile('../client/grocery-signs.html');
  * 
  * Application root.
  */
-app.get('/', function(req, res) {
+app.get('/', (req, res) => {
     res.send(mainPageTpl({
         providers: providers, 
         fields: templates.fields,
@@ -338,7 +326,7 @@ app.get('/', function(req, res) {
  * 
  * Main page with given provider pre-selected.
  */
-app.get('/:provider', function(req, res, next) {
+app.get('/:provider', (req, res, next) => {
     var provider = req.params.provider;
     
     if (!providers.find(function(e) {return (e == provider);})) {
@@ -361,7 +349,7 @@ app.get('/:provider', function(req, res, next) {
  * Static HTML page with input fields filled with scraped sentences, and 
  * permalinks to PDFs and thumbnails.
  */
-app.get('/:provider/:id', function(req, res, next) {
+app.get('/:provider/:id', (req, res, next) => {
     console.log(req.params);
     var provider = req.params.provider;
     var id = req.params.id;
@@ -380,9 +368,7 @@ app.get('/:provider/:id', function(req, res, next) {
     }
     
     // Try to find scraped result for the given provider/id.
-    ScraperResult.findOne({provider: provider, id: id}, function(err, result) {
-        if (err) return next(err);
-        
+    ScraperResult.findOne({provider: provider, id: id}).then(result => {
         if (!result) return next();
 
         // Found! Generate page with scraped data.
@@ -455,7 +441,7 @@ app.get('/:provider/:id', function(req, res, next) {
  * Permalinks to PDF (client-side generated on the fly), crawlable from the HTML
  * page. Uses Headless Chrome to convert SVG to PDF. 
  */
-app.get('/:provider/:id/:template.pdf', async function(req, res, next) {
+app.get('/:provider/:id/:template.pdf', async (req, res, next) => {
     const templateName = req.params.template;
     if (!templates.templates[templateName]) {
         // No such template.
@@ -476,7 +462,7 @@ app.get('/:provider/:id/:template.pdf', async function(req, res, next) {
  * 
  * PDFKitbased PDF generation.
  */
-app.get('/:provider/:id/:template.old.pdf', function(req, res, next) {
+app.get('/:provider/:id/:template.old.pdf', (req, res, next) => {
     var provider = req.params.provider;
     var id = req.params.id;
     var template = req.params.template;
@@ -503,9 +489,7 @@ app.get('/:provider/:id/:template.old.pdf', function(req, res, next) {
     }
     
     // Try to find scraped result for the given provider/id.
-    ScraperResult.findOne({provider: provider, id: id}, function(err, result) {
-        if (err) return next(err);
-        
+    ScraperResult.findOne({provider: provider, id: id}).then(result => {
         if (!result) return next();
 
         // Found! Generate PDF with scraped data.
@@ -546,9 +530,9 @@ app.get('/:provider/:id/:template.old.pdf', function(req, res, next) {
             return;
         }
         // Fetch all image URLs from DB.
-        Image.find({url: {$in: result.images}}, function(err, results) {
+        Image.find({url: {$in: result.images}}).then(results => {
             var images = [];
-            if (!err && results) {
+            if (results) {
                 // Ensure that images are in the same order as URLs.
                 var imagesByUrl = {};
                 for (image of results) {
@@ -578,7 +562,7 @@ var svgPageTpl = swig.compileFile('../client/svg.html');
  * 
  * TODO factorize code with HTML version
  */
-app.get('/:provider/:id/:template.svg', function(req, res, next) {
+app.get('/:provider/:id/:template.svg', (req, res, next) => {
     var provider = req.params.provider;
     var id = req.params.id;
     var template = req.params.template;
@@ -605,9 +589,7 @@ app.get('/:provider/:id/:template.svg', function(req, res, next) {
     }
     
     // Try to find scraped result for the given provider/id.
-    ScraperResult.findOne({provider: provider, id: id}, function(err, result) {
-        if (err) return next(err);
-        
+    ScraperResult.findOne({provider: provider, id: id}).then(result => {
         if (!result) return next();
 
         // Found! Generate PDF with scraped data.
@@ -653,9 +635,9 @@ app.get('/:provider/:id/:template.svg', function(req, res, next) {
             return;
         }
         // Fetch all image URLs from DB.
-        Image.find({url: {$in: result.images}}, function(err, results) {
+        Image.find({url: {$in: result.images}}).then(results => {
             var images = [];
-            if (!err && results) {
+            if (results) {
                 // Ensure that images are in the same order as URLs.
                 var imagesByUrl = {};
                 for (image of results) {
@@ -678,103 +660,6 @@ app.get('/:provider/:id/:template.svg', function(req, res, next) {
 });
 
 /**
- * /:provider/:id/:template.png
- * 
- * Permalinks to PDF thumbnails (generated on the fly), crawlable from the HTML page.
- */
-app.get('/:provider/:id/:template.png', function(req, res, next) {
-    //FIXME disabled until we can get the canvas module working.
-    // https://github.com/Automattic/node-canvas/wiki/Installation---Windows
-    // http://www.delarre.net/posts/installing-node-canvas-for-windows/
-    return next();
-    
-    var provider = req.params.provider;
-    var id = req.params.id;
-    var template = req.params.template;
-    
-    if (!providers.find(function(e) {return (e == provider);})) {
-        // No such provider.
-        return next();
-    }
-    if (!templates.templates[template]) {
-        // No such template.
-        return next();
-    }
-    
-    // Try to find scraped result for the given provider/id.
-    ScraperResult.findOne({provider: provider, id: id}, function(err, result) {
-        if (err) return next(err);
-        
-        if (!result) return next();
-
-        // Found! Generate PDF with scraped data.
-        console.log("Found cached scraper result", provider, id);
-        
-        // Build sentence map.
-        //TODO randomize
-        var sentences = {};
-        var i = 0;
-        for (var field of templates.fields) {
-            sentences[field] = result.sentences[i++];
-        }
-        
-        if (result.images.length == 0) {
-            // No image.
-            generatePDF(res, templates.templates[template], sentences, []);
-            return;
-        }
-        // Fetch all image URLs from DB.
-        Image.find({url: {$in: result.images}}, function(err, results) {
-            var images = [];
-            if (!err && results) {
-                // Ensure that images are in the same order as URLs.
-                var imagesByUrl = {};
-                for (image of results) {
-                    console.log("Found cached image", image.url, image.type, image.data.length);
-                    imagesByUrl[image.url] = {url: image.url, type: image.type, data: image.data};
-                }
-                for (url of result.images) {
-                    images.push(imagesByUrl[url]);
-                }
-            }
-            //FIXME use transform stream?
-            var streamBuffers = require('stream-buffers');
-            var stream = new streamBuffers.WritableStreamBuffer();
-            stream.on('finish', function() {
-                stream.end();
-                
-                // Generate PNG thumbnail.
-                var Canvas = require('canvas');
-                var PDFJS  = require('./pdf.js');
-                PDFJS.disableWorker = true;
-                PDFJS.getDocument(stream.getContents()).then(function(pdfDoc) {
-                    /* Only render the first page. */
-                    pdfDoc.getPage(1).then(function(page) {
-                    /* Create viewport and canvas. */
-                        var scale = 0.5;
-                        var viewport = page.getViewport(scale);
-                        var canvas = new Canvas(viewport.width, viewport.height);
-
-                        /* Render page. */
-                        page.render({
-                            canvasContext: canvas.getContext('2d'),
-                            viewport: viewport
-                        }).then(function () {
-                            canvas.pngStream().pipe(res);
-                        }, function (err) {
-                            console.log("Error generating PNG thumbnail", err);
-                        });
-
-                    });
-                });
-                
-            });
-            generatePDF(stream, templates.templates[template], sentences, images);
-        });
-    });
-});
-
-/**
  * randomPageTpl
  * 
  * Template file for /random HTML page.
@@ -786,7 +671,7 @@ var randomPageTpl = swig.compileFile('../client/random.html');
  * 
  * Random page viewer.
  */
-app.get('/random', function(req, res) {
+app.get('/random', (req, res) => {
     res.send(randomPageTpl());
 });
 
@@ -795,15 +680,13 @@ app.get('/random', function(req, res) {
  * 
  * Pick & redirect to random page.
  */
-app.get('/random.pdf', function(req, res, next) {
+app.get('/random.pdf', (req, res, next) => {
     // Try to find scrape with nonempty bookmark list.
-    var find = function() {
+    var find = () => {
         // Random seed value used to select the scrape.
         var seed = generateRandomSeed();
         
-        ScraperResult.findOne({seed: {$gte: seed}, $nor: [ {bookmarks: {$exists: false}}, {bookmarks: {$size: 0}} ]}, "provider id bookmarks", function(err, result) {
-            if (err) return next(err);
-
+        ScraperResult.findOne({seed: {$gte: seed}, $nor: [ {bookmarks: {$exists: false}}, {bookmarks: {$size: 0}} ]}, "provider id bookmarks").then(result => {
             if (!result) {
                 // Try again.
                 find();
@@ -851,7 +734,7 @@ var piFeedPageTpl = swig.compileFile('../client/pi-feed.html');
  * 
  * PI feed page viewer.
  */
-app.get('/pi-feed', function(req, res) {
+app.get('/pi-feed', (req, res) => {
     res.send(piFeedPageTpl({
         templateNames: JSON.stringify(Object.keys(templates.templates)),
     }));
@@ -862,7 +745,7 @@ app.get('/pi-feed', function(req, res) {
  * 
  * HTTP server instance.
  */
-var server = app.listen(3000, function () {
+var server = app.listen(3000, () => {
   var host = server.address().address;
   var port = server.address().port;
 
