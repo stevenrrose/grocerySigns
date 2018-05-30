@@ -167,10 +167,11 @@ app.get('/scraper/fetchImage', async (req, res, next) => {
 
 /**
  * Get cached data for given images.
- *  
- * @param {*} images List of image URLs. 
+ * 
+ * @param {*} images List of image URLs.
+ * @param {*} base64 Whether to return data in raw or base-64 format.
  */
-async function getCachedImages(images) {
+async function getCachedImages(images, base64) {
     if (images.length === 0) {
         return [];
     }
@@ -181,7 +182,12 @@ async function getCachedImages(images) {
         var imagesByUrl = {};
         for (image of cachedImages) {
             console.log("Found cached image", image.url, image.type, image.data.length);
-            imagesByUrl[image.url] = {url: image.url, type: image.type, data: image.data};
+            if (base64) {
+                var data = 'data:' + image.type + ';base64,' + Buffer.from(image.data).toString('base64');
+                imagesByUrl[image.url] = {url: image.url, type: image.type, data: data};
+            } else {
+                imagesByUrl[image.url] = {url: image.url, type: image.type, data: image.data};
+            }
         }
         for (url of images) {
             results.push(imagesByUrl[url]);
@@ -543,6 +549,8 @@ app.get('/:provider/:id/:template.old.pdf', async (req, res, next) => {
     
     // Fetch all image URLs from DB.
     const images = await getCachedImages(result.images);
+
+    // Generate PDF.
     generatePDF(res, templates.templates[template], fields, images, options);
 });
 
@@ -552,6 +560,50 @@ app.get('/:provider/:id/:template.old.pdf', async (req, res, next) => {
  * Template file for *.svg HTML page.
  */
 var svgPageTpl = swig.compileFile('../client/svg.html');
+
+
+/**
+ * /templates/:template.pdf?parameters={parameters}
+ * 
+ * On-demand PDF generation from parameters.
+ */
+app.get('/templates/:template.pdf', async (req, res, next) => {
+    const templateName = req.params.template;
+    if (!templates.templates[templateName]) {
+        // No such template.
+        return next();
+    }
+    const template = templates.templates[templateName];
+
+    // Forward to SVG version and convert to PDF.
+    const url = req.originalUrl.replace(".pdf", ".svg");
+    const response = await browserPage.goto('http://localhost:3000' + url, {waitUntil: 'networkidle0'});// FIXME URL
+    res.set('Content-Type', 'application/pdf');
+    res.send(await browserPage.pdf({width: template.width, height: template.height, pageRanges: '1'}));
+});
+
+/**
+ * /templates/:template.svg?parameters={parameters}
+ * 
+ * On-demand SVG page generation from parameters.
+ */
+app.get('/templates/:template.svg', async (req, res, next) => {
+    const template = req.params.template;
+    const parameters = JSON.parse(req.query.parameters);
+    if (!templates.templates[template]) {
+        // No such template.
+        return next();
+    }
+
+    // Generate SVG page.
+    res.send(svgPageTpl({ parameters : JSON.stringify({
+        template: template,
+        seed: parameters.seed,
+        fields: parameters.fields,
+        images: parameters.images,
+        options: parameters.options
+    })}));
+});
 
 /**
  * /:provider/:id/:template.svg?randomize={seed}&color={color}
@@ -590,7 +642,7 @@ app.get('/:provider/:id/:template.svg', async (req, res, next) => {
     const result = await ScraperResult.findOne({provider: provider, id: id});
     if (!result) return next();
 
-    // Found! Generate PDF with scraped data.
+    // Found! Generate SVG with scraped data.
     console.log("Found cached scraper result", provider, id);
     
     seed = (randomize ? seed : result.seed);
@@ -623,11 +675,14 @@ app.get('/:provider/:id/:template.svg', async (req, res, next) => {
     res.setHeader('X-Scrape-URL', scrapeURL);
     
     // Fetch all image URLs from DB.
-    const images = await getCachedImages(result.images);
+    const images = await getCachedImages(result.images, true);
+
+    // Generate SVG page.
     res.send(svgPageTpl({ parameters : JSON.stringify({
         template: template,
+        seed: seed,
         fields: fields,
-        images: [],
+        images: images,
         options: options
     })}));
 });

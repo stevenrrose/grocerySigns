@@ -2,9 +2,18 @@
 <head>
     <base href="../../">
     <link rel="stylesheet" href="css/fonts.css">
+    <script src="js/raphael.min.js"></script>
+    <script src="js/FontFile.js"></script>
+    <script src="js/ImageFile.js"></script>
     <script>
-    var parameters = {{parameters|safe}};
     var pdfMode = false;
+    var parameters = {{parameters|safe}};
+    for (var i in parameters.images) {
+        if (typeof(parameters.images[i]) === 'string') {
+            parameters.images[i] = new ImageFile(parameters.images[i], imageLoaded);
+        }
+    }
+    templates.computeActualMaxFieldLengths(parameters.seed);
     function scheduleRefresh() {
         refresh();
     }
@@ -12,9 +21,6 @@
         document.body.innerHTML = generateSVG(templates[parameters.template], parameters.fields, parameters.images, parameters.options);
     }
     </script>
-    <script src="js/raphael.min.js"></script>
-    <script src="js/FontFile.js"></script>
-    <script src="js/ImageFile.js"></script>
     <script src="templates.js"></script>
     <script src="generate.js"></script>
 </head>

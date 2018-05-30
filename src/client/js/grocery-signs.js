@@ -298,6 +298,7 @@ function refreshFrame(index) {
     var container = $("#page-" + index);
     var templateName = $("#page-template-" + index).val();
     var color = $("input[name='page-color-" + index + "']:checked").val();
+    var seed = $("#seed").val();
     var fileName = getFileName(index);
 
     if (pdfMode) {    
@@ -334,22 +335,24 @@ function refreshFrame(index) {
         
     } else {
 
-        // Generate the PDF.
+        // Generate PDF download link URL.
+        var images = [];
+        for (var i in scrapedImages) {
+            images.push(scrapedImages[i].url);
+        }
+        var parameters = {
+            seed: seed,
+            fields: scrapedTexts,
+            images: images,
+            options: {color: color}
+        };
+        var url = 'templates/' + templateName + '.pdf'
+            + "?parameters=" + encodeURIComponent(JSON.stringify(parameters));
+
+        // Generate the SVG.
         var svg = generateSVG(templates[templateName], scrapedTexts, scrapedImages, {color: color});
 
-        // Get & remember blob object.
-        var blob = new Blob([svg], {type: "image/svg+xml"});
-        $(container).data("blob", blob);
-        
-        // Clear previous blob URL and remember new one.
-        var url = $(container).data("blobUrl");
-        if (url) {
-            window.URL.revokeObjectURL(url);
-        }
-        url = window.URL.createObjectURL(blob);
-        $(container).data("blobUrl", url);
-
-        // Render blob URL into container.
+        // Render SVG into container.
         renderSVG(svg, container);
             
         // Set link attributes.
@@ -357,7 +360,7 @@ function refreshFrame(index) {
         $("#page-download-" + index)
             .attr('href', url)
             .attr('target', '_blank')
-            .attr('download', fileName + '.svg'); //FIXME server-size printing
+            .attr('download', fileName + '.pdf');
     }
 
 }
