@@ -19,7 +19,7 @@
     "body-parser": "^1.14.1",
     "express": "^4.13.3",
     "mongodb": "^2.0.48",
-    "mongoose": "^4.2.5",
+    "mongoose": "^4.13.14",
     "pdf.js": "^0.1.0",
     "pdfkit": "^0.8.0",
     "puppeteer": "^1.4.0",
