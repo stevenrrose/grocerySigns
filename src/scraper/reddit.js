@@ -68,18 +68,22 @@ providers["Reddit"] = {
                 }
             },
             function(data) {
-                var info = data[0][0];
-                // Generate item ID from URL path with /'s replaced by |'s.
-                info.itemId = new URL(info.url).pathname.replace(/\//g, '|');
-                // Fix URL protocol in images.
-                if (info.images) {
-                    for (var i = 0; i < info.images.length; i++) {
-                        if (info.images[i].match(/^\/\//)) {
-                            info.images[i] = "https:" + info.images[i];
+                try {
+                    var info = data[0][0];
+                    // Generate item ID from URL path with /'s replaced by |'s.
+                    info.itemId = new URL(info.url).pathname.replace(/\//g, '|');
+                    // Fix URL protocol in images.
+                    if (info.images) {
+                        for (var i = 0; i < info.images.length; i++) {
+                            if (info.images[i].match(/^\/\//)) {
+                                info.images[i] = "https:" + info.images[i];
+                            }
                         }
                     }
+                    callback($.extend({success: info ? true : false}, info));
+                } catch (error) {
+                    callback({success: false, error: error});
                 }
-                callback($.extend({success: info ? true : false}, info));
             }
         );
     },

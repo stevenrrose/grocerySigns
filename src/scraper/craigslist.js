@@ -42,28 +42,32 @@ providers["Craigslist"] = {
                 }
             },
             function(data) {
-                // Pick a random page.
-                var total = data[0][0].total;
-                var i = Math.floor(Math.random()*total);
-                var url = "https://newyork.craigslist.org/search/" + what + "?s=" + i;
-                console.log(url);
-                artoo.ajaxSpider(
-                    [{url: fetchUrl, data: {url: url}}],
-                    {
-                        scrape: {
-                            iterator: ".hdrlnk",
-                            data: {
-                                itemId: function() {
-                                    var path = new URL($(this).attr('href')).pathname;
-                                    return path.match(/\/(.*)\..*?/)[1].replace(/\//g,'_');
+                try {
+                    // Pick a random page.
+                    var total = data[0][0].total;
+                    var i = Math.floor(Math.random()*total);
+                    var url = "https://newyork.craigslist.org/search/" + what + "?s=" + i;
+                    console.log(url);
+                    artoo.ajaxSpider(
+                        [{url: fetchUrl, data: {url: url}}],
+                        {
+                            scrape: {
+                                iterator: ".hdrlnk",
+                                data: {
+                                    itemId: function() {
+                                        var path = new URL($(this).attr('href')).pathname;
+                                        return path.match(/\/(.*)\..*?/)[1].replace(/\//g,'_');
+                                    }
                                 }
                             }
+                        },
+                        function(data) {
+                            callback(data[0]);
                         }
-                    },
-                    function(data) {
-                        callback(data[0]);
-                    }
-                );
+                    );
+                } catch (error) {
+                    callback(null, error);
+                }
             }
         );
     },
@@ -106,8 +110,12 @@ providers["Craigslist"] = {
                 }
             },
             function(data) {
-                var info = data[0][0];
-                callback($.extend({success: info ? true : false, itemId: itemId, url: url}, info));
+                try {
+                    var info = data[0][0];
+                    callback($.extend({success: info ? true : false, itemId: itemId, url: url}, info));
+                } catch (error) {
+                    callback({success: false, error: error});
+                }
             }
         );
     },

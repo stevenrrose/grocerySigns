@@ -37,29 +37,33 @@ providers["Twitter"] = {
                 }
             },
             function(data) {
-                // Pick a random location.
-                var total = data[0].length;
-                var i = Math.floor(Math.random()*total);
-                var url = "https://trends24.in" + data[0][i].path;
-                console.log(url);
-                artoo.ajaxSpider(
-                    [{url: fetchUrl, data: {url: url}}],
-                    {
-                        scrape: {
-                            iterator: "#trend-list a",
-                            data: {
-                                itemId: function() {
-                                    var re = /search\?q=(.+)/.exec($(this).attr('href'));
-                                    if (!re) return undefined;
-                                    return re[1];
+                try {
+                    // Pick a random location.
+                    var total = data[0].length;
+                    var i = Math.floor(Math.random()*total);
+                    var url = "https://trends24.in" + data[0][i].path;
+                    console.log(url);
+                    artoo.ajaxSpider(
+                        [{url: fetchUrl, data: {url: url}}],
+                        {
+                            scrape: {
+                                iterator: "#trend-list a",
+                                data: {
+                                    itemId: function() {
+                                        var re = /search\?q=(.+)/.exec($(this).attr('href'));
+                                        if (!re) return undefined;
+                                        return re[1];
+                                    }
                                 }
                             }
+                        },
+                        function(data) {
+                            callback(data[0]);
                         }
-                    },
-                    function(data) {
-                        callback(data[0]);
-                    }
-                );
+                    );
+                } catch (error) {
+                    callback(null, error);
+                }
             }
         );
     },
@@ -100,17 +104,21 @@ providers["Twitter"] = {
                 }
             },
             function(data) {
-                // Pick a random tweet.
-                var total = data[0].length;
-                var i = Math.floor(Math.random()*total);
-                var info = data[0][i];
-                // Get full URL.
-                info.url = "https://twitter.com" + info.url;
-                // Fix price.
-                if (!info.price) info.price = "0";
-                // Generate item ID from URL path with /'s replaced by |'s.
-                info.itemId = new URL(info.url).pathname.replace(/\//g, '|');
-                callback($.extend({success: info ? true : false}, info));
+                try {
+                    // Pick a random tweet.
+                    var total = data[0].length;
+                    var i = Math.floor(Math.random()*total);
+                    var info = data[0][i];
+                    // Get full URL.
+                    info.url = "https://twitter.com" + info.url;
+                    // Fix price.
+                    if (!info.price) info.price = "0";
+                    // Generate item ID from URL path with /'s replaced by |'s.
+                    info.itemId = new URL(info.url).pathname.replace(/\//g, '|');
+                    callback($.extend({success: info ? true : false}, info));
+                } catch (error) {
+                    callback({success: false, error: error});
+                }
             }
         );
     },

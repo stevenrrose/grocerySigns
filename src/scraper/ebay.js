@@ -72,9 +72,13 @@ providers["eBay"] = {
                 }
             },
             function(data) {
-                var info = data[0][0];
-                if (info && info.image) info.images = [info.image];
-                callback($.extend({success: info ? true : false, itemId: itemId, url: url}, info));
+                try {
+                    var info = data[0][0];
+                    if (info && info.image) info.images = [info.image];
+                    callback($.extend({success: info ? true : false, itemId: itemId, url: url}, info));
+                } catch (error) {
+                    callback({success: false, error: error});
+                }
             }
         );
     },

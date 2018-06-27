@@ -101,15 +101,19 @@ providers["Etsy"] = {
                 }
             },
             function(data) {
-                var info = data[0][0];
-                var feedback = data[1];
-                info.reviews = [];
-                for (var i = 0; i < feedback.length; i++) {
-                    for (var j = 0; j < feedback[i].length; j++) {
-                        info.reviews.push(feedback[i][j]);
+                try {
+                    var info = data[0][0];
+                    var feedback = data[1];
+                    info.reviews = [];
+                    for (var i = 0; i < feedback.length; i++) {
+                        for (var j = 0; j < feedback[i].length; j++) {
+                            info.reviews.push(feedback[i][j]);
+                        }
                     }
+                    callback($.extend({success: info ? true : false, itemId: itemId, url: url}, info));
+                } catch (error) {
+                    callback({success: false, error: error});
                 }
-                callback($.extend({success: info ? true : false, itemId: itemId, url: url}, info));
             }
         );
     },

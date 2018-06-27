@@ -501,8 +501,13 @@ function fetchCallback(provider, info) {
         });
     } else {
         // Failure.
-        console.error("fetchCallback", info);      
-        displayMessage(false, "Scraping failed!", provider.name + " ID = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.itemId + "</a>");
+        if (info.error) {
+            console.error("fetchCallback", "Error during scraping", info.error);
+            displayMessage(false, "Scraping failed!", "Error during scraping (see console)");
+        } else {
+            console.error("fetchCallback", info);
+            displayMessage(false, "Scraping failed!", provider.name + " ID = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.itemId + "</a>");
+        }
     }
 
     // Done!
@@ -582,11 +587,20 @@ function scrapeRandom(provider) {
         'metric1': 1
     });
 
-    provider.search(str, function(results) {
+    provider.search(str, function(results, error) {
+        if (error) {
+            // No or invalid results.
+            console.error("scrapeRandom", "Error during scraping", error);
+            displayMessage(false, "Scraping failed!", "Error during scraping (see console)");
+            
+            // Stop there.
+            enableInterface(true);
+            return;
+        }
         if (!results || !results.length) {
             // No or invalid results.
             console.error("scrapeRandom", "Empty results");
-            displayMessage(false, "Scraping failed!", provider.name + " search string = " + str);
+            displayMessage(false, "Scraping failed!", "Empty results: " + provider.name + " search string = " + str);
             
             // Stop there.
             enableInterface(true);
