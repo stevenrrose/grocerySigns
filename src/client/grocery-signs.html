@@ -90,6 +90,13 @@
                                 <option value="{{provider}}"{% if active_provider == provider %} selected{% endif %}>{{provider}}</option>
                                 {% endfor %}
                             </select>
+                            <script>
+                                $("#autofill-provider option").each(function(i, e) {
+                                   if (typeof(providers[$(e).val()]) === 'undefined') {
+                                       $(e).prop('disabled', true);
+                                   }
+                                });
+                            </script>
                         </div>
                         
                         <!-- Generate button -->

@@ -26,14 +26,15 @@ function include(path) {
  * file, so define the variable as a property of this object.
  */
 global.providers = {};
-include('../scraper/amazon.js');
 include('../scraper/ebay.js');
 include('../scraper/etsy.js');
-include('../scraper/okcupid.js');
 include('../scraper/craigslist.js');
-include('../scraper/upwork.js');
 include('../scraper/reddit.js');
 include('../scraper/twitter.js');
+// Put disabled providers at the end
+include('../scraper/amazon.js');
+include('../scraper/okcupid.js');
+include('../scraper/upwork.js');
 
 // Exports the above *providers* variable.
 exports.providers = providers;
