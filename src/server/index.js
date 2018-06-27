@@ -2,7 +2,6 @@
 
 process.chdir(__dirname);
 
-var request = require('request');
 var express = require('express');
 var bodyParser = require('body-parser');
 var swig = require('swig');
@@ -10,9 +9,6 @@ var puppeteer = require('puppeteer');
 
 var scraper = require('./scraper.js');
 var templates = require('./templates.js');
-
-// Used to debug outgoing requests.
-// request.debug = true;
 
 /*
  *
@@ -25,7 +21,22 @@ const browserPage = await browser.newPage();
 // Change the user agent to fix issue with fonts: headless loads TTF instead
 // of woff2 and setst the wrong unicodeRange.
 let agent = await browser.userAgent();
-await browserPage.setUserAgent(agent.replace("HeadlessChrome", "Chrome"));
+agent = agent.replace("HeadlessChrome", "Chrome");
+await browserPage.setUserAgent(agent);
+
+/*
+ * Outgoing requests.
+ */
+
+var request = require('request').defaults({
+    timeout: 10000, /* ms */
+    headers: {
+        'User-Agent': agent /* Same as Chrome instance above */
+    }
+});
+
+// Used to debug outgoing requests.
+// request.debug = true;
 
 /**
  * 
