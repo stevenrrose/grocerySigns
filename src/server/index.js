@@ -17,12 +17,10 @@ var templates = require('./templates.js');
  */
 
 const browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
-const browserPage = await browser.newPage();
 // Change the user agent to fix issue with fonts: headless loads TTF instead
 // of woff2 and setst the wrong unicodeRange.
 let agent = await browser.userAgent();
 agent = agent.replace("HeadlessChrome", "Chrome");
-await browserPage.setUserAgent(agent);
 
 /*
  * Outgoing requests.
@@ -31,7 +29,7 @@ await browserPage.setUserAgent(agent);
 var request = require('request').defaults({
     timeout: 10000, /* ms */
     headers: {
-        'User-Agent': agent /* Same as Chrome instance above */
+//        'User-Agent': agent /* Same as Chrome instance above */
     }
 });
 
@@ -485,6 +483,8 @@ app.get('/:provider/:id/:template.pdf', async (req, res, next) => {
 
     // Forward to SVG version and convert to PDF.
     const url = req.originalUrl.replace(".pdf", ".svg");
+    const browserPage = await browser.newPage();
+    await browserPage.setUserAgent(agent);
     const response = await browserPage.goto('http://localhost:3000' + url, {waitUntil: 'networkidle0'});// FIXME URL
     res.set('Content-Type', 'application/pdf');
     res.set('X-Scrape-URL', response.headers()['x-scrape-url'])
@@ -588,6 +588,8 @@ app.get('/templates/:template.pdf', async (req, res, next) => {
 
     // Forward to SVG version and convert to PDF.
     const url = req.originalUrl.replace(".pdf", ".svg");
+    const browserPage = await browser.newPage();
+    await browserPage.setUserAgent(agent);
     const response = await browserPage.goto('http://localhost:3000' + url, {waitUntil: 'networkidle0'});// FIXME URL
     res.set('Content-Type', 'application/pdf');
     res.send(await browserPage.pdf({width: template.width, height: template.height, pageRanges: '1'}));
