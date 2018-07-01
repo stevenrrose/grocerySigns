@@ -28,9 +28,9 @@ providers["eBay"] = {
             [{url: fetchUrl, data: {url: url}}],
             {
                 scrape: {
-                    iterator: ".sresult",
+                    iterator: ".s-item [data-id]",
                     data: {
-                        itemId: {attr: "listingid"}
+                        itemId: {attr: "data-id"}
                     }
                 }
             },
