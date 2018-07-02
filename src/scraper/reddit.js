@@ -39,14 +39,51 @@ providers["Reddit"] = {
         console.log(url);
         artoo.ajaxSpider(
             [{url: fetchUrl, data: {url: url}}],
+            function(data) {
+                try {
+                    var info = {};
+                    var m = data[0].match(/window.___r = ({.*?});/);
+                    var d = JSON.parse(m[1]);
+                    var postId = d.shortcuts.activePostId;
+                    var post = d.posts.models[postId];
+                    info.url = post.permalink;
+                    // Generate item ID from URL path with /'s replaced by |'s.
+                    info.itemId = new URL(info.url).pathname.replace(/\//g, '|');
+                    info.title = post.title;
+                    info.price = post.score.toString();
+                    info.vendor = post.author;
+                    if (post.thumbnail) {
+                        info.images = [post.thumbnail.url];
+                    }
+                    info.description = [];
+                    for (var commentId in d.comments.models) {
+                        try {
+                            var sentences = splitSentences(d.comments.models[commentId].bodyMD)
+                                .filter(function(e) {
+                                    return e.trim() != "";
+                                });
+                            info.description.push.apply(info.description, sentences)
+                        } catch (e) {}
+                    }
+                    callback($.extend({success: true}, info));
+                } catch (error) {
+                    callback({success: false, error: error});
+                }
+            }
+        );
+        /*
+        artoo.ajaxSpider(
+            [{url: fetchUrl, data: {url: url}}],
             {
                 scrape: {
-                    iterator: "div.content",
+                    iterator: "#2x-container",
                     data: {
                         url: function() {
-                            return $(this).parent().find("link[rel='canonical']").attr('href');
+                            return $(this).find("link[rel='canonical']").attr('href');
                         },
-                        title: {sel: "p.title a.title", method: 'text'},
+                        title: function() {
+                            return $(this).find("title").text();
+                        },
                         price: function() {
                             return $(this).parent().find(".score .number").text();
                         },
@@ -54,7 +91,7 @@ providers["Reddit"] = {
                         description: function() {
                             return splitSentences(
                                 $.makeArray(
-                                    $(this).find(".usertext").contents()
+                                    $(this).parent().find(".usertext").contents()
                                         .map(function() {
                                             return $(this).text();
                                         })
@@ -86,5 +123,6 @@ providers["Reddit"] = {
                 }
             }
         );
+        */
     },
 };
