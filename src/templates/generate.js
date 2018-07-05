@@ -912,6 +912,6 @@ function generateSVG(template, fields, images, globalOptions) {
     
     // Done.
     var svg = paper.canvas.outerHTML;
-    paper.clear();
+    paper.remove();
     return svg;
 }
