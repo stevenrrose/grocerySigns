@@ -21,10 +21,24 @@
     PDFJS.workerSrc = "js/pdfjs/build/pdf.worker.js";
     </script>
 
+    <!-- Raphaël -->
+    <script src="js/raphael.min.js"></script>
+
     <!-- Our stuff -->
-    <script src="js/grocery-signs.js"></script>
+    <!-- 1. Fonts, images & templates -->
+    <script>
+    var pdfMode = false;
+    </script>
+    <script src="js/FontFile.js"></script>
+    <script src="js/ImageFile.js"></script>
+    <script src="templates.js"></script>
+    <script src="generate.js"></script>
+
+    <!-- 2. Main code -->
+    <!-- <script src="js/grocery-signs.js"></script> -->
     <script src="js/random.js"></script>
     
+    <link rel="stylesheet" href="css/fonts.css">
     <link rel="stylesheet" href="css/grocery-signs.css">
 </head>
 <body id="random">

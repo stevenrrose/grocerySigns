@@ -1,3 +1,13 @@
+/** Default page format class (see grocery-signs.css) */
+var pageFormatClass = "page-us";
+
+/** Delay for scheduled refresh events. */
+var refreshDelay = 500; /*ms*/
+
+/** Last scheduled refresh event. */
+var refreshEvent = null;
+
+
 /**
  * Add random PDF pages. Triggered by the infinite scroll mechanism  (spinning icon).
  * Each page element renders the /random.pdf file, which selects a random scrape permutation.
@@ -26,10 +36,62 @@ function appendPages(nb) {
                 .append($("<div class='thumbnail'></div>").append(page))
         );
                 
-        // Load a random PDF in the container.
-        loadPDF('random.pdf?_='+Math.random(), page, {scale: 1});
+        // Load a random page in the container.
+        loadPage('random.json?_='+Math.random(), page);
     }
     
     // Move spinning icon to end of viewport.
     $("#pages-end").appendTo($pages);
+}
+
+function loadPage(url, container, options) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'json';
+    xhr.onload = function(e) {
+        if (this.status == 200) {
+            // Remember parameters.
+            $(container).data('parameters', this.response)
+
+            // The scrape page is passed by the server as the X-Scrape-URL response header.
+            $(container).data('url', this.getResponseHeader('X-Scrape-URL'));
+
+            refreshFrame(container);
+        }
+    };
+    xhr.send();
+}
+
+/**
+ *  Schedule a refresh event.
+ */
+function scheduleRefresh() {
+    if (refreshEvent) {
+        clearTimeout(refreshEvent);
+    }
+    refreshEvent = setTimeout(function() {refresh(); refreshEvent = null;}, refreshDelay);
+}
+
+/**
+ *  Refresh all active pages.
+ */
+function refresh() {
+    // Call refreshFrame on each active page.
+    $(".page").each(function(index, container) {
+        refreshFrame(container);
+    });
+}
+
+/**
+ *  Refresh the SVG output frame.
+ */
+function refreshFrame(container) {
+    var parameters = $(container).data('parameters');
+    var url = $(container).data('url');
+    var svg = generateSVG(templates[parameters.template], parameters.fields, parameters.images, parameters.options)
+    $(container)
+        .empty()
+        .append($("<a target='_blank'></a>")
+            .attr('href', url)
+            .append(svg));
 }
