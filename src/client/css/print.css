@@ -1,0 +1,32 @@
+@media print {
+    @page {
+        size: letter portrait;
+        margin: 0;
+    }
+        
+    body {
+        margin: 0;
+    }
+
+    #header, #pages-end, .page-container .input-group {
+        display: none;
+    }
+
+    .page-container {
+        page-break-after: always;
+        float: none;
+        width: 100%!important;
+    }
+
+    #pages, .page-container, .thumbnail, svg {
+        margin: 0!important;
+        padding: 0!important;
+        border: none!important;
+    }
+
+    /* Remove links in Firefox */
+    a[href]:after {
+        content: none !important;
+    }   
+
+}

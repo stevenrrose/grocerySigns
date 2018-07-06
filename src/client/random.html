@@ -40,6 +40,7 @@
     
     <link rel="stylesheet" href="css/fonts.css">
     <link rel="stylesheet" href="css/grocery-signs.css">
+    <link rel="stylesheet" href="css/print.css" media="print">
 </head>
 <body id="random">
     <script>
@@ -51,7 +52,7 @@
     ga('create', 'UA-75922855-1', 'auto');
     ga('send', 'pageview');
     </script>    
-    <div class="container-fluid">
+    <div id="header" class="container-fluid">
         <div class="page-header">
             <h1><sup><a href="http://www.destijlife.com/">2</a> </sup>Grocery Signs - Random</h1>
         </div>
@@ -61,17 +62,6 @@
     <div id="pages" class="container-fluid"></div>
     <script>
         appendPages(4);
-    </script>
-    <script>
-    $(".page-template, .color-selector").each(function(i, e) {$(e).change(function() {refreshFrame($(this).data('page-index'));});});
-    </script>
-    
-    <script>
-    // Styling.
-    $("select").wrap("<div class='styled-select'></div>");
-    $("input[type='number']").wrap("<div class='styled-input'></div>").after("<span class='input-spinbox-up'></span><span class='input-spinbox-down'></span>");
-    $(".input-spinbox-up")  .click(function(e) {e.stopPropagation(); var i = $(this).parent().find("input"); i[0].stepUp(); i.change();});
-    $(".input-spinbox-down").click(function(e) {e.stopPropagation(); var i = $(this).parent().find("input"); i[0].stepDown(); i.change();});
     </script>
 </body>
 </html>

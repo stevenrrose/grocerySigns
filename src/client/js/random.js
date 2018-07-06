@@ -16,7 +16,7 @@ function appendPages(nb) {
     var $pages = $("#pages");
     var nbPages = $("#pages .page").length;
     if (nbPages == 0) {
-        // Add spînning icon; triggers appendPages() when visible.
+        // Add spinning icon; triggers appendPages() when visible.
         var end = $("<div id='pages-end' class='col-xs-12'><span class='icon icon-generate rotate-ccw'></span><span class='sr-only'>Loading...</span></div>");
         $pages.append(end);
         $(window).on('resize scroll', function() {
