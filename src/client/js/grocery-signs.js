@@ -335,7 +335,7 @@ function refreshFrame(index) {
         
     } else {
 
-        // Generate PDF download link URL.
+        // Generate SVG download link URL.
         var images = [];
         for (var i in scrapedImages) {
             images.push(scrapedImages[i].url);
@@ -474,7 +474,7 @@ function fetchCallback(provider, info) {
         });
         
         // Success, gather & display item data.
-        console.log("fetchCallback", info);      
+        console.log("fetchCallback", info);
         displayMessage(true, "Success!", provider.name + " ID = <a class='alert-link' target='_blank' href=\'" + info.url + "\'>" + info.itemId  + "</a>");
         
         var sentences = processSentences(info);

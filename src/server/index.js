@@ -656,7 +656,6 @@ app.get('/:provider/:id/:template.old.pdf', async (req, res, next) => {
  */
 var svgPageTpl = swig.compileFile('../client/svg.html');
 
-
 /**
  * /templates/:template.pdf?parameters={parameters}
  * 

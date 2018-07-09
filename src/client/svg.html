@@ -2,6 +2,8 @@
 <head>
     <base href="../../">
     <link rel="stylesheet" href="css/fonts.css">
+    <link rel="stylesheet" href="css/grocery-signs.css">
+    <link rel="stylesheet" href="css/print.css" media="print">
     <script src="js/raphael.min.js"></script>
     <script>
     var pdfMode = false;
@@ -22,10 +24,11 @@
         refresh();
     }
     function refresh() {
-        document.body.innerHTML = generateSVG(templates[parameters.template], parameters.fields, parameters.images, parameters.options);
+        document.getElementById("page").innerHTML = generateSVG(templates[parameters.template], parameters.fields, parameters.images, parameters.options);
     }
     </script>
 </head>
 <body>
+    <div id="page" class="page page-us"></div>
 </body>
 </html>
