@@ -9,8 +9,8 @@ var refreshEvent = null;
 
 
 /**
- * Add random PDF pages. Triggered by the infinite scroll mechanism  (spinning icon).
- * Each page element renders the /random.pdf file, which selects a random scrape permutation.
+ * Add random pages. Triggered by the infinite scroll mechanism (spinning icon).
+ * Each page element fetches /random.json, which selects a random scrape permutation.
  */
 function appendPages(nb) {
     var $pages = $("#pages");
@@ -28,7 +28,7 @@ function appendPages(nb) {
         });
     }
     
-    // Add nb pages and render a random PDF within.
+    // Add nb pages and render a random SVG within.
     for (var i = 0; i < nb; i++) {
         // Create page container.
         var page = $("<div class='page'></div>").addClass(pageFormatClass);
