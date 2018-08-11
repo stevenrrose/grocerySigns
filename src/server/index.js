@@ -746,6 +746,48 @@ app.get('/:provider/:id/:template.svg', async (req, res, next) => {
 });
 
 /**
+ * /:provider/:id/:template.json?randomize={seed}&color={color}
+ * 
+ * Permalinks to page parameters.
+  */
+app.get('/:provider/:id/:template.json', async (req, res, next) => {
+    var provider = req.params.provider;
+    var id = req.params.id;
+    var template = req.params.template;
+    var randomize, seed;
+    if (typeof(req.query.randomize) === 'undefined') {
+        randomize = false;
+    } else {
+        randomize = true;
+        seed = parseInt(req.query.randomize);
+        if (isNaN(seed)) return next('Invalid seed');
+    }
+    var options = {}
+    if (typeof(req.query.color) !== 'undefined') {
+        options.color = req.query.color;
+    }
+
+    try {
+        // Get parameters from bookmark.
+        const parameters = await getBookmarkParameters(provider, id, template, randomize, seed, options);
+        
+        // Write header with canonical scrape URL.
+        var scrapeURL = 
+              '/' + encodeURIComponent(provider) 
+            + '/' + encodeURIComponent(id);
+        if (randomize) {
+            scrapeURL += '?randomize=' + seed;
+        }
+        res.setHeader('X-Scrape-URL', scrapeURL);
+
+        // Return parameters as JSON.
+        res.json(parameters).end();
+    } catch (error) {
+        return next(error);
+    }
+});
+
+/**
  * randomPageTpl
  * 
  * Template file for /random HTML page.

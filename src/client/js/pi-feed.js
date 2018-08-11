@@ -1,3 +1,12 @@
+/** Default page format class (see grocery-signs.css) */
+var pageFormatClass = "page-us";
+
+/** Delay for scheduled refresh events. */
+var refreshDelay = 500; /*ms*/
+
+/** Last scheduled refresh event. */
+var refreshEvent = null;
+
 /** Max displayed pages upon first load. */
 var maxFirstPages = 10;
 
@@ -61,7 +70,7 @@ function refreshPages() {
 }
 
 /**
- * Add new PDF pages.
+ * Add new pages.
  * 
  * @param results   List of history entries to add.
  * @param end       If false, prepend pages to beginning of list, else append to end.
@@ -90,16 +99,34 @@ function addPages(results, end) {
         params.template = templateNames[Math.floor(Math.random() * templateNames.length)];
         var colors = ["black", "red", "blue"];
         params.color = colors[Math.floor(Math.random() * colors.length)];
-        var pdfURL = 
+        var url = 
                         encodeURIComponent(params.provider) 
                 + '/' + encodeURIComponent(params.id)
-                + '/' + encodeURIComponent(params.template) + '.pdf'
+                + '/' + encodeURIComponent(params.template) + '.json'
                 + '?randomize=' + params.seed
                 + '&color=' + params.color;
 
-        // Load the PDF in the container.
-        loadPDF(pdfURL, page, {scale: 1});
+        // Load the page in the container.
+        loadPage(url, page);
     }
+}
+
+function loadPage(url, container, options) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'json';
+    xhr.onload = function(e) {
+        if (this.status == 200) {
+            // Remember parameters.
+            $(container).data('parameters', this.response)
+
+            // The scrape page is passed by the server as the X-Scrape-URL response header.
+            $(container).data('url', this.getResponseHeader('X-Scrape-URL'));
+
+            refreshFrame(container);
+        }
+    };
+    xhr.send();
 }
 
 /**
@@ -115,4 +142,38 @@ function moreResults() {
             $("#pages-end").remove();
         }
     }
+}
+
+/**
+ *  Schedule a refresh event.
+ */
+function scheduleRefresh() {
+    if (refreshEvent) {
+        clearTimeout(refreshEvent);
+    }
+    refreshEvent = setTimeout(function() {refresh(); refreshEvent = null;}, refreshDelay);
+}
+
+/**
+ *  Refresh all active pages.
+ */
+function refresh() {
+    // Call refreshFrame on each active page.
+    $(".page").each(function(index, container) {
+        refreshFrame(container);
+    });
+}
+
+/**
+ *  Refresh the SVG output frame.
+ */
+function refreshFrame(container) {
+    var parameters = $(container).data('parameters');
+    var url = $(container).data('url');
+    var svg = generateSVG(templates[parameters.template], parameters.fields, parameters.images, parameters.options)
+    $(container)
+        .empty()
+        .append($("<a target='_blank'></a>")
+            .attr('href', url)
+            .append(svg));
 }

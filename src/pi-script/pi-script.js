@@ -1,46 +1,68 @@
 /**
- * PhantomJS script that triggers random actions on the main Grocery Signs app page.
+ * Puppeteer script that triggers random actions on the main Grocery Signs app page.
  */
 
-/** Refresh interval (milliseconds). */
-var refreshInterval = 1000;
+(async() => {
 
-var system = require('system');
+process.chdir(__dirname);
+
+/** Refresh interval (milliseconds). */
+const refreshInterval = 1000;
+
+const puppeteer = require('puppeteer');
 
 // Main page URL is given as first argument to the script.
-var url = system.args[1] || 'http://localhost:3000/';
+console.log(process.argv);
+const url = process.argv[2] || 'http://localhost:3000/';
+
+/*
+ *
+ * Headless Chrome.
+ * 
+ */
+
+const browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
+// Change the user agent to fix issue with fonts: headless loads TTF instead
+// of woff2 and setst the wrong unicodeRange.
+let agent = await browser.userAgent();
+agent = agent.replace("HeadlessChrome", "Chrome");
+
+
 
 // Load the main app page.
 console.log("Loading main page", url);
-var page = require('webpage').create();
-page.open(url, function(status) {
-    if (status !== 'success') {
-        console.error('Error while loading main page', url);
-        phantom.exit();
-    }
-    
-    // Display web page console message here.
-    page.onConsoleMessage = function(msg) {
-        console.log('    | ' + msg);
-    };
+const page = await browser.newPage();
+await page.setUserAgent(agent);
+try {
+    const response = await page.goto(url, {waitUntil: 'networkidle0'});
+    if (!response.ok()) throw response.error;
+} catch (e) {
+    console.error('Error while loading main page', url, e);
+    process.exit();
+}
 
-    // Inject global Ajax error handler.
-    page.evaluate(function() {
-        $(document).ajaxError(function(event, jqXHR, ajaxSetting, thrownError) {
-            console.log("ajaxError", thrownError);
-            document.inProgress = false;
-        });
-    });
-    
-    // Scrape a random page periodically.
-    setInterval(function() {
-        if (!scrapeRandom(page)) {
-            console.warn("  >> Scraping in progress");
-            return;
-        }
-        console.log("Scraping a random page");
-    }, refreshInterval);
+// Display web page console message here.
+page.on('console', (e) => {
+    console.log('    | ' + e.text());
 });
+
+// Inject global Ajax error handler.
+await page.evaluate(() => {
+    $(document).ajaxError(function(event, jqXHR, ajaxSetting, thrownError) {
+        console.log("ajaxError", thrownError);
+        document.inProgress = false;
+    });
+});
+
+// Scrape a random page periodically.
+setInterval(async () => {
+    const status = await scrapeRandom(page);
+    if (!status) {
+        console.warn("  >> Scraping in progress");
+        return;
+    }
+    console.log("Scraping a random page");
+}, refreshInterval);
 
 /**
  * Scrape a page from a random provider.
@@ -48,7 +70,7 @@ page.open(url, function(status) {
  * @param {webpage} page PhantomJS page
  * @returns {bool} true if scrape scheduled, false if skipped (i.e. scraping in progress)
  */
-function scrapeRandom(page) {
+async function scrapeRandom(page) {
     return page.evaluate(function() {
         if (document.inProgress) {
             return false;
@@ -139,3 +161,5 @@ function scrapeRandom(page) {
         return true;
     });
 }
+
+})();
