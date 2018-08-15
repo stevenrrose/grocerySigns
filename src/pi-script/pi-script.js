@@ -69,7 +69,7 @@ setInterval(async () => {
         console.log("Maximum number of scrapes reached, exiting");
         process.exit();
     }
-    console.log("Scraping a random page");
+    console.log(`Scraping random page #${nbScrapes}/${maxNbScrapes}`);
 }, refreshInterval);
 
 /**
