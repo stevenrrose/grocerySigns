@@ -35,6 +35,10 @@ function refreshPages() {
     }
     xhr.open('GET', url, true);
     xhr.responseType = 'json';
+    xhr.onerror = function() {
+        // Error, retry later anyway.
+        setTimeout(refreshPages, refreshInterval);
+    }
     xhr.onload = function(e) {
         if (this.status == 200) {
             // Limit first batch of pages.
