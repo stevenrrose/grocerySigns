@@ -6,6 +6,9 @@
 
 process.chdir(__dirname);
 
+/** Maximim number of scrapes. */
+const maxNbScrapes = 50;
+
 /** Refresh interval (milliseconds). */
 const refreshInterval = 1000;
 
@@ -54,12 +57,17 @@ await page.evaluate(() => {
     });
 });
 
-// Scrape a random page periodically.
+// Scrape a random page periodically (up to the maxNbScrapes limit).
+let nbScrapes = 0;
 setInterval(async () => {
     const status = await scrapeRandom(page);
     if (!status) {
         console.warn("  >> Scraping in progress");
         return;
+    }
+    if (nbScrapes++ > maxNbScrapes) {
+        console.log("Maximum number of scrapes reached, exiting");
+        process.exit();
     }
     console.log("Scraping a random page");
 }, refreshInterval);
