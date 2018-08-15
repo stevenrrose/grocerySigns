@@ -112,7 +112,7 @@ app.get('/sitemap.txt', (req, res) => {
 app.get('/scraper/fetch', (req, res, next) => {
     // Validate provided URL against each provider's URL pattern.
     var url = req.query.url;
-    console.log(url);
+    console.log("Fetching URL", url);
     for (var p in scraper.providers) {
         if (url.match(scraper.providers[p].urlPattern)) {
             // Matched! Fetch remote data.
@@ -120,7 +120,7 @@ app.get('/scraper/fetch', (req, res, next) => {
             return;
         }
     }
-    console.log("Rejecting URL " + url);
+    console.warn("Rejecting URL", url);
     return res.status(403).end();
 });
 
@@ -146,7 +146,7 @@ app.get('/scraper/fetchImage', async (req, res, next) => {
     const image = await Image.findOne({url: url});
     if (image) {
         // Found!
-        console.log("Found cached image", url, image.type, image.data.length);
+        console.log("Found cached image", {url, type: image.type, length: image.data.length});
         res.contentType(image.type);
         res.send(image.data);
         return;
@@ -156,7 +156,7 @@ app.get('/scraper/fetchImage', async (req, res, next) => {
     // to prevent abuse.
     const result = await ScraperResult.findOne({provider: provider, id: id});
     if (!result || !result.images || result.images.indexOf(url) === -1) {
-        console.log("Rejecting image " + url);
+        console.warn("Rejecting image", url);
         return res.status(403).end();
     }
 
@@ -190,7 +190,7 @@ async function getCachedImages(images, base64) {
         // Ensure that images are in the same order as URLs.
         var imagesByUrl = {};
         for (image of cachedImages) {
-            console.log("Found cached image", image.url, image.type, image.data.length);
+            console.log("Found cached image", {url: image.url, type: image.type, length: image.data.length});
             if (base64) {
                 var data = 'data:' + image.type + ';base64,' + Buffer.from(image.data).toString('base64');
                 imagesByUrl[image.url] = {url: image.url, type: image.type, data: data};
@@ -242,14 +242,18 @@ app.post('/scraper/bookmark', async (req, res, next) => {
             }
         }
     } catch (e) {
-        console.log(e);
         return res.status(400).end();
     }
         
-    await result.save();
-    console.log("Saved scraper result to MongoDB", req.body);
-    res.location('/' + req.body.provider + '/' + req.body.id);
-    res.send('OK');
+    try {
+        await result.save();
+        console.log("Saved scraper result to MongoDB", {provider: req.body.provider, id: req.body.id, seed: req.body.seed});
+        res.location('/' + req.body.provider + '/' + req.body.id);
+        res.send('OK');
+    } catch(err) {
+        console.error("Error while saving scraper result to MongoDB", err);
+        return res.status(400).end();
+    };
 });
 
 /**
@@ -282,21 +286,22 @@ app.post('/scraper/bookmarkSeed', async (req, res, next) => {
     bookmark.seed = seed;
     try {
         await bookmark.save();
-        console.log("Bookmark saved to MongoDB by caller app " + caller);
+        console.log("Bookmark saved to MongoDB", {caller, provider, id, seed});
+
+        if (typeof(seed) !== 'undefined') {
+            // Add seed to the scraped result's bookmark set.
+            const result = await ScraperResult.findOneAndUpdate({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false});
+            if (!result) return next();
+
+            if (result.nModified) {
+                console.log("Bookmark added to scraper result in MongoDB", {provider, id, seed});
+            }
+        }
+        res.send('OK');
     } catch(err) {
         console.error("Error while saving bookmark to MongoDB", err);
+        return res.status(400).end();
     };
-    
-    if (typeof(seed) !== 'undefined') {
-        // Add seed to the scraped result's bookmark set.
-        const result = await ScraperResult.findOneAndUpdate({provider: provider, id: id}, {$addToSet: {bookmarks: seed}}, {multi: false});
-        if (!result) return next();
-
-        if (result.nModified) {
-            console.log("Bookmark added to scraper result in MongoDB", req.body);
-        }
-    }
-    res.send('OK');
 });
 
 /**
@@ -314,7 +319,6 @@ app.get('/history', async (req, res, next) => {
     try {
         if (typeof(since) !== 'undefined' && isNaN(Date.parse(since))) throw "Unrecognized date format";
     } catch (e) {
-        console.log(e);
         return res.status(400).end();
     }
     
@@ -383,7 +387,7 @@ async function getBookmarkParameters(provider, id, template, randomize, seed, op
     }
 
     // Found! Get scraped data.
-    console.log("Found cached scraper result", provider, id);
+    console.log("Found cached scraper result", {provider, id});
     
     seed = (randomize ? seed : result.seed);
     
@@ -464,7 +468,6 @@ app.get('/:provider', (req, res, next) => {
  * permalinks to PDFs and thumbnails.
  */
 app.get('/:provider/:id', async (req, res, next) => {
-    console.log(req.params);
     var provider = req.params.provider;
     var id = req.params.id;
     var randomize, seed;
@@ -486,7 +489,7 @@ app.get('/:provider/:id', async (req, res, next) => {
     if (!result) return next();
 
     // Found! Generate page with scraped data.
-    console.log("Found cached scraper result", provider, id);
+    console.log("Found cached scraper result", {provider, id});
     
     seed = (randomize ? seed : result.seed);
     
@@ -611,7 +614,7 @@ app.get('/:provider/:id/:template.old.pdf', async (req, res, next) => {
     if (!result) return next();
 
     // Found! Generate PDF with scraped data.
-    console.log("Found cached scraper result", provider, id);
+    console.log("Found cached scraper result", {provider, id});
     
     seed = (randomize ? seed : result.seed);
     
