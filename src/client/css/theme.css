@@ -393,7 +393,7 @@ input[type=number] {
 .page-container > .thumbnail:first-child {
     border-top: 4px solid black;
 }
-#random .thumbnail {
+#random .thumbnail, #feed .thumbnail {
 	border-width: 3px;
 }
 

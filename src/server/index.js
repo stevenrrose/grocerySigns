@@ -703,7 +703,7 @@ app.get('/templates/:template.svg', async (req, res, next) => {
         seed: parameters.seed,
         fields: parameters.fields,
         images: parameters.images,
-        options: parameters.options
+        options: {...parameters.options, backgroundColor: 'white'}
     })}));
 });
 
@@ -882,16 +882,16 @@ app.get('/random.json', async (req, res, next) => {
 /**
  * piFeedPageTpl
  * 
- * Template file for /pi-feed HTML page.
+ * Template file for /feed HTML page.
  */
 var piFeedPageTpl = swig.compileFile('../client/pi-feed.html');
 
 /**
- * /pi-feed
+ * /feed
  * 
- * PI feed page viewer.
+ * Feed page viewer.
  */
-app.get('/pi-feed', (req, res) => {
+app.get('/feed', (req, res) => {
     res.send(piFeedPageTpl({
         templateNames: JSON.stringify(Object.keys(templates.templates)),
     }));
