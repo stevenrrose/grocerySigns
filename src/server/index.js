@@ -170,6 +170,9 @@ app.get('/scraper/fetchImage', async (req, res, next) => {
             image.data = new Buffer(body, 'binary');
             await image.save();
             console.log("Saved image to MongoDB", url);
+        } else {
+            console.error("Error while fetching image", {url, error});
+            return res.status(400).end();
         }
     }).pipe(res);
 });
