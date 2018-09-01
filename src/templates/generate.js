@@ -619,6 +619,12 @@ function generateSVG(template, fields, images, globalOptions) {
     var paper = Raphael(0, 0, template.width, template.height);
     paper.setViewBox(0, 0, template.width, template.height, false);
 
+    if (globalOptions.backgroundColor) {
+        // Fill rectangle with background color.
+        paper.rect(0, 0, template.width, template.height)
+            .attr({'fill': globalOptions.backgroundColor, 'stroke': 'none'});
+    }
+
     // String measurement.
     paper.renderedTextSize = function(string, attr) {
         var el = this.text(0, 0, string);
@@ -728,7 +734,7 @@ function generateSVG(template, fields, images, globalOptions) {
                 paper.rect(0, 0, width, height)
                     .transform(matrix.toTransformString())
                     .attr({'fill': fieldOptions.color, 'stroke': 'none'});
-                fill = 'white';
+                fill = globalOptions.backgroundColor || 'white';
             } else {
                 fill = fieldOptions.color;
             }
