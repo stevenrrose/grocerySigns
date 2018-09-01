@@ -880,11 +880,11 @@ app.get('/random.json', async (req, res, next) => {
 });
 
 /**
- * piFeedPageTpl
+* * feedPageTpl
  * 
  * Template file for /feed HTML page.
  */
-var piFeedPageTpl = swig.compileFile('../client/pi-feed.html');
+var feedPageTpl = swig.compileFile('../client/feed.html');
 
 /**
  * /feed
@@ -892,7 +892,25 @@ var piFeedPageTpl = swig.compileFile('../client/pi-feed.html');
  * Feed page viewer.
  */
 app.get('/feed', (req, res) => {
-    res.send(piFeedPageTpl({
+    res.send(feedPageTpl({
+        templateNames: JSON.stringify(Object.keys(templates.templates)),
+    }));
+});
+
+/**
+ * fullscreenFeedPageTpl
+ * 
+ * Template file for /fullscreen-feed HTML page.
+ */
+var fullscreenFeedPageTpl = swig.compileFile('../client/fullscreen-feed.html');
+
+/**
+ * /fullscreen-feed
+ * 
+ * Feed page viewer.
+ */
+app.get('/fullscreen-feed', (req, res) => {
+    res.send(fullscreenFeedPageTpl({
         templateNames: JSON.stringify(Object.keys(templates.templates)),
     }));
 });

@@ -617,7 +617,7 @@ function generateSVG(template, fields, images, globalOptions) {
 
     // Create SVG document with template size.
     var paper = Raphael(0, 0, template.width, template.height);
-    paper.setViewBox(0, 0, template.width, template.height, false);
+    paper.setViewBox(0, 0, template.width, template.height, true);
 
     if (globalOptions.backgroundColor) {
         // Fill rectangle with background color.

@@ -174,6 +174,8 @@ function refresh() {
 function refreshFrame(container) {
     var parameters = $(container).data('parameters');
     var url = $(container).data('url');
+    var options = parameters.options;
+    options.backgroundColor = 'white'; 
     var svg = generateSVG(templates[parameters.template], parameters.fields, parameters.images, parameters.options)
     $(container)
         .empty()

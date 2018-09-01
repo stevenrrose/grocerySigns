@@ -62,6 +62,25 @@
     padding: 0;
 }
 
+/* Fullscreen mode (e.g. feed page). */
+.fullscreen {
+    background: black;
+    margin: 0;
+}
+.fullscreen .page {
+    padding: 0;
+} 
+.fullscreen svg {
+    background: black;
+    position: fixed!important;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    padding: 0;
+}
+
+
 /* Template color selectors. */
 .color-black {
     color: black!important;
