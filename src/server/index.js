@@ -571,14 +571,18 @@ app.get('/:provider/:id/:template.pdf', async (req, res, next) => {
     // Forward to SVG version and convert to PDF.
     const url = req.originalUrl.replace(".pdf", ".svg");
     const browserPage = await browser.newPage();
-    await browserPage.setUserAgent(agent);
-    const response = await browserPage.goto('http://localhost:3000' + url, {waitUntil: 'networkidle0'});// FIXME URL
-    if (!response.ok()) {
-        return next();
+    try {
+        await browserPage.setUserAgent(agent);
+        const response = await browserPage.goto('http://localhost:3000' + url, {waitUntil: 'networkidle0'});// FIXME URL
+        if (!response.ok()) {
+            return next();
+        }
+        res.set('Content-Type', 'application/pdf');
+        res.set('X-Scrape-URL', response.headers()['x-scrape-url'])
+        res.send(await browserPage.pdf({width: template.width, height: template.height, pageRanges: '1'}));
+    } finally {
+        browserPage.close();
     }
-    res.set('Content-Type', 'application/pdf');
-    res.set('X-Scrape-URL', response.headers()['x-scrape-url'])
-    res.send(await browserPage.pdf({width: template.width, height: template.height, pageRanges: '1'}));
 });
 
 /**
@@ -678,10 +682,17 @@ app.get('/templates/:template.pdf', async (req, res, next) => {
     // Forward to SVG version and convert to PDF.
     const url = req.originalUrl.replace(".pdf", ".svg");
     const browserPage = await browser.newPage();
-    await browserPage.setUserAgent(agent);
-    const response = await browserPage.goto('http://localhost:3000' + url, {waitUntil: 'networkidle0'});// FIXME URL
-    res.set('Content-Type', 'application/pdf');
-    res.send(await browserPage.pdf({width: template.width, height: template.height, pageRanges: '1'}));
+    try {
+        await browserPage.setUserAgent(agent);
+        const response = await browserPage.goto('http://localhost:3000' + url, {waitUntil: 'networkidle0'});// FIXME URL
+        if (!response.ok()) {
+            return next();
+        }
+        res.set('Content-Type', 'application/pdf');
+        res.send(await browserPage.pdf({width: template.width, height: template.height, pageRanges: '1'}));
+    } finally {
+        browserPage.close();
+    }
 });
 
 /**
