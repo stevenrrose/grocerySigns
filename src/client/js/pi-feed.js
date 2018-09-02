@@ -62,13 +62,13 @@ function refreshPages() {
 
                 addPages(results);
             }
-                
-            // Schedule new refresh.
-            setTimeout(refreshPages, refreshInterval);
-        }
         
-        // Limit overall number of pages.
-        $("#pages > :nth-child(n+" + (maxPages+1) + ")").remove();
+            // Limit overall number of pages.
+            $("#pages > :nth-child(n+" + (maxPages+1) + ")").remove();
+        }
+                
+        // Schedule new refresh.
+        setTimeout(refreshPages, refreshInterval);
     };
     xhr.send();
 }
